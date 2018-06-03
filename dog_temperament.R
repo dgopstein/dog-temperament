@@ -7,8 +7,8 @@ library(Hmisc)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-dogs <- data.table(read.csv("dog_temperament.csv", header=FALSE))
-colnames(dogs) <-  c("dog", "total", "pass", "fail")
+dogs <- data.table(read.csv("dog_temperament.csv", header=TRUE))
+#colnames(dogs) <-  c("dog", "total", "pass", "fail")
 dogs[, lower.conf := binconf(pass, total, alpha=0.2)[, 'Lower']]
 dogs[, upper.conf := binconf(pass, total, alpha=0.2)[, 'Upper']]
 dogs[, point.est  := binconf(pass, total, alpha=0.2)[, 'PointEst']]
@@ -34,30 +34,115 @@ ggplot(dogs[total>0][order(-point.est)][200:220], aes(dog.by.lower.conf, lower.c
   theme_classic() +
   coord_flip()
 
+dogs[dog=="Bull Terrier (miniature)",]
+dogs[dog=="Belgian Malinois",]
+dogs[dog=="French Bulldog",]
+
+
 n<-100
-
-dogs.norm <- as.data.table(merge.data.frame(dogs, data.table(x=seq(0, 1, length.out=n)), all=TRUE))
-dogs.norm[, norm := dnorm(x, mean=point.est, sd=.08/confidence)]
-#dogs.norm[, pois := dpois(x, lambda=4)]
-dogs.norm[, bern := Rlab::dbern(x*(n-1), prob=point.est)]
-dogs.norm[, binom := dbinom(round(x*(n-1)), n, prob=pass/total)]
-
-dogs.norm[dog=="Pungsan", x*(n-1)]
-dogs.norm[dog=="Pungsan"]$binom
-dogs.norm[dog=="Irish Setter"]$binom
-
-ggplot(dogs.norm[dog%in%rev(levels(dogs$dog.by.lower.conf))[10:20]], aes(x, dog.by.lower.conf, height=binom, fill=..x..)) +
-  geom_density_ridges_gradient(stat="identity") +
-  guides(fill=FALSE)
 
 total.dog <- dogs$dog[do.call(c, mapply(function(dog, total) rep(dog, each=total+1), dogs$dog, dogs$total))]
 total.x <- do.call(c, mapply(function(dog, total) seq(0, 1, length.out=total+1), dogs$dog, dogs$total))
 
-dogs.scaled <- data.table(dog = total.dogs, x = total.x)
+dogs.scaled <- data.table(dog = total.dog, x = total.x)
 dogs.scaled <- merge(dogs.scaled, dogs, by="dog", all.x=TRUE)
 dogs.scaled[, binom := dbinom(round(x*(total)), total, prob=pass/total)]
 
-ggplot(dogs.scaled[dog%in%rev(levels(dogs$dog.by.lower.conf))[seq(1, 240, by=8)]],
+ggplot(dogs.scaled[dog%in%rev(levels(dogs$dog.by.lower.conf))[1:50]], # [seq(1, 240, by=6)]],
        aes(x, dog.by.lower.conf, height=binom*sqrt(total*confidence), fill=..x..)) +
   geom_density_ridges_gradient(stat="identity") +
+  lims(x=c(.5,1)) +
   guides(fill=FALSE)
+
+dogs.scaled
+
+
+pdf.binconf.wide <- function(pass, total) {
+  probs <- data.table(p = seq(0, 1, by=.01))
+  probs[, lower := sapply(p, function(p) binconf(pass, total, p)[2])]
+  probs[, upper := sapply(p, function(p) binconf(pass, total, p)[3])]
+  probs
+}
+
+pdf.binconf <- function(pass, total) {
+  as.data.table(tidyr::gather(pdf.binconf.wide(pass, total), bound.type, bound, lower:upper, factor_key=FALSE))
+}
+
+ggplot(pdf.binconf(8, 10), aes(bound, p)) + geom_line()
+
+ggplot(aes(bound, p), data=data.frame()) +
+  geom_line(data=pdf.binconf(8, 10), color="blue") +
+  geom_line(data=pdf.binconf(80, 100), color="red") +
+  lims(x = c(0,1)) +
+  annotate("text",0.15, 0.85,  size=15, hjust=0, color="black", label="pass/fail") +
+  annotate("text",0.2, 0.65, size=15, hjust=0, color="blue", label="8/10") +
+  annotate("text",0.2, 0.5,  size=15, hjust=0, color="red", label="80/100")
+
+ggplot(pdf.binconf.wide(8, 10)[, .(p, bound = upper-lower)], aes(bound, p)) + geom_line()
+
+pdf.diff <- pdf.binconf(80,100)[order(bound)][, diff := diff(bound)]
+
+ggplot(pdf.diff, aes(bound, 1-diff)) + geom_line()
+
+ggplot(pdf.binconf(8,10)[, .(p, bound = ifelse(bound.type=='lower', .8-bound, bound-.8))][, .(p, bound, diff = diff(bound))]) +
+  geom_line(aes(bound, 1-diff))
+
+inverse <- function (f, lower = -100, upper = 100) {
+  function (y) uniroot((function (x) f(x) - y), lower = lower, upper = upper)[1]
+}
+
+inverse.binconf <- function(lower.bound, total, alpha=0.8) {
+  unlist(inverse(function(pass) binconf.lower(pass, total, alpha), 0, total)(lower.bound))
+}
+
+binconf.lower <- function(pass, total, alpha=0.8) binconf(pass, total, alpha)[2]
+
+binconf.lower(8, 10)
+
+inverse.binconf(0.4, 10, alpha=.5)
+
+inverse.binconf.data <- data.table(p = seq(0.01, 0.99, by=.01))[, .(p, pass = sapply(p, function(x) inverse.binconf(x, 10)))]
+ggplot(data=inverse.binconf.data) + geom_line(aes(x=p, y=pass-10*p))
+
+### integration ###
+pdf.binconf(8, 10)
+pdf.diff[!is.nan(bound), pracma::trapz(bound, p)]
+
+binom.dt <- data.table(x = seq(0,1,by=0.001))[, .(x, y=dbinom(1000*x, size=1000,prob=9.8/10))]
+ggplot(binom.dt) + geom_line(aes(x,y))
+
+?dbinom
+
+
+#### Continuous Binomial ####
+continuous.binom <- function(x, n, p) {
+    ifelse(x <= 0, 0,
+           ifelse(x > (n+1), 1,
+    zipfR::Ibeta(p, x, n+1, lower=FALSE) /
+      zipfR::Ibeta(0, x, n+1-x, lower=FALSE)))
+}
+
+continuous.binom <- function(x, n, p) {
+  ifelse(x <= 0, 0,
+         ifelse(x > (n+1), 1,
+                zipfR::Ibeta(p, x, n+1, lower=FALSE) /
+                  zipfR::Cbeta(x, n+1-x)))
+}
+
+continuous.binom(8, 10, .8)
+binom.dt <- data.table(x = seq(0,10,length.out=1000))[, .(x, y=continuous.binom(x, 10, .9))]
+ggplot(binom.dt) + geom_line(aes(x,y))
+
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,10) +
+  stat_function(fun = )
+
+  #stat_function(fun = function(x) continuous.binom(x, 10, .99999))
+
+########## Regularized Beta Function #############
+binom.rbeta.cdf <- function(k,p=.5,n=10) (1-zipfR::Rbeta(p, k+1, n-k))
+pdf.rbeta <- data.table(x = seq(0,12+.2,length.out = 10000))[,
+                      .(x, cdf = sapply(x, function(x) binom.rbeta.cdf(x, .01, 12)))][,
+                      .(x, cdf, pdf = diff(cdf))]
+ggplot(pdf.rbeta) + geom_line(aes(x, pdf))
+
