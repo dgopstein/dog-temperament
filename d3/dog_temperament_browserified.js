@@ -29,19 +29,21 @@ d3.csvParse(dogs_csv, function(data) {});
   }
 
 function getData(mean, sigma) {
-  const n = 1000;
+  const n = 100;
   const sample_size = 5;
   var data = [];
-  for (var i = 0; i < n; i++) {
+  for (var i = 0; i <= n; i++) {
     q = (i/n) * sample_size;
+    console.log("q", q)
     //p = distribution.pdf(q);
-    p = regIncBeta(.005, sample_size, q);
+    p = regIncBeta(.5, sample_size, q);
     el = {
-      "q": q,
+      "q": q/sample_size,
       "p": p
     }
     data.push(el)
   };
+  //data.push({"q": sample_size, "p": 0});
   return data;
 }
 

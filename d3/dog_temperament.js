@@ -1,7 +1,11 @@
-//var distribution = gaussian(0, 1);
-//var distribution = gaussian(0, 1);
-//incBeta(x, a, b)
-require('mathfn')
+console.log("ibetainv: ", this.jStat.ibetainv(1, 2, 2))
+
+//console.log("ibetainv: ", this.jStat.ibetainv(.1, 1, 2))
+//console.log("betacf: ", this.jStat.betacf(.1, 1, 2))
+//console.log("betaln: ", this.jStat.betaln(.1, 1, 2))
+//console.log("ibeta: ", this.jStat.ibeta(.1, 1, 2))
+//console.log("betafn: ", this.jStat.betafn(  1, 2))
+
 
 var margin = {
   top: 20,
@@ -20,27 +24,38 @@ var svg = d3.select("#dogs").append("svg")
 
 d3.csvParse(dogs_csv, function(data) {});
 
-const regIncBeta = (p, n, x) =>
-      incBeta(p, x, n+1-x) /
-         Beta(   x, n+1-x)
+// http://ac.inf.elte.hu/Vol_039_2013/137_39.pdf
+const ilienko = (x, n, p) => {
+  if (x <= 0) return 0;
+  if (x > n+1) return 1;
 
-function getData(mean, sigma) {
-  const n = 100000;
-  var data = [];
-  for (var i = 0; i < n; i++) {
-    q = ((i/n)-.5)*20;
-    //p = distribution.pdf(q);
-    p = regIncBeta(.5, 12, q);
-    el = {
-      "q": q,
-      "p": p
-    }
-    data.push(el)
-  };
+  return this.jStat.ibeta(p, x, n+1) /
+         this.jStat.betafn(  x, n+1-x)
+}
+
+const continuousBinom = (x_in, n, p_in) => {
+  isUpper = p_in > 0.5
+
+  p = isUpper ? 1-p_in : p_in // The function is only well-behaved for p < .5
+  p = 2*p // no idea why i have to do this?
+  p = Math.min(p, 1-(1e-20)) // Make sure p isn't exactly 1
+
+  x = isUpper ? n - x_in : x_in;
+
+  return ilienko(x, n-1, p)
+}
+
+
+function binomPoints(n, p) {
+  const points = 1000;
+
+  const data = _.range(0, n, n/points)
+        .map(x => {return {"q": x, "p": continuousBinom(x, n, p)}})
+
   return data;
 }
 
-function drawGaussian(svg, mean, sigma) {
+function drawGaussian(svg, n, p) {
   const xScale = d3.scaleLinear().range([0, width]);
   const yScale = d3.scaleLinear().range([height, 0]);
 
@@ -52,7 +67,7 @@ function drawGaussian(svg, mean, sigma) {
       .x(d => xScale(d.q))
       .y(d => yScale(d.p));
 
-  const data = getData(mean, sigma); // popuate data
+  const data = binomPoints(n, p); // popuate data
 
   xScale.domain(d3.extent(data, d => d.q))
   yScale.domain(d3.extent(data, d => d.p))
@@ -72,4 +87,4 @@ function drawGaussian(svg, mean, sigma) {
     .attr("d", line);
 }
 
-drawGaussian(svg, .1, 19)
+drawGaussian(svg, 10, .1)
