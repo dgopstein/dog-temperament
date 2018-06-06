@@ -123,6 +123,8 @@ continuous.binom <- function(x, n, p) {
 }
 
 continuous.binom <- function(x, n, p) {
+  p <- min(p, 0.999999999)
+  
   ifelse(x <= 0, 0,
          ifelse(x > (n+1), 1,
                 zipfR::Ibeta(p, x, n+1, lower=FALSE) /
@@ -133,16 +135,43 @@ continuous.binom(8, 10, .8)
 binom.dt <- data.table(x = seq(0,10,length.out=1000))[, .(x, y=continuous.binom(x, 10, .9))]
 ggplot(binom.dt) + geom_line(aes(x,y))
 
+plot.continuous.binom <- function(n, p) {
+  is.upper <- p > 0.5
+  dput(is.upper)
+  cb <- if(is.upper) {
+    function(x) continuous.binom(n-x, n-1, 2*(1-p))
+  } else {
+    function(x) continuous.binom(x, n-1, 2*p)
+  }
+  
+  ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,n) +
+    stat_function(fun = cb)
+}
 
-ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,10) +
-  stat_function(fun = )
+continuous.binom(10, 10, 1)
 
-  #stat_function(fun = function(x) continuous.binom(x, 10, .99999))
+plot.continuous.binom(10, .8)
+
+ggplot(data.frame(sample = rbinom(50000, 4, 0.25)), aes(sample)) + geom_histogram(bins = 4) + xlim(0,4)
 
 ########## Regularized Beta Function #############
+n.samples <- 250
 binom.rbeta.cdf <- function(k,p=.5,n=10) (1-zipfR::Rbeta(p, k+1, n-k))
-pdf.rbeta <- data.table(x = seq(0,12+.2,length.out = 10000))[,
-                      .(x, cdf = sapply(x, function(x) binom.rbeta.cdf(x, .01, 12)))][,
+pdf.rbeta <- data.table(x = seq(0,250,length.out = 1000))[,
+                      .(x, cdf = sapply(x, function(x) binom.rbeta.cdf(x, .01, n.samples)))][,
                       .(x, cdf, pdf = diff(cdf))]
-ggplot(pdf.rbeta) + geom_line(aes(x, pdf))
+ggplot(pdf.rbeta) + geom_line(aes(x/n.samples, pdf))
+
+###################################################################################################
+# https://stats.stackexchange.com/questions/194182/beta-as-distribution-of-proportions-or-as-continuous-binomial
+
+binom.combobeta.pdf <- function(k,p=.5,n=10)
+  (1/((n+1)*zipfR::Cbeta(k+1,n-k+1))) * p^k * (1-p)^(n-k)
+
+binom.combobeta3.pdf <- function(u,p=.5,n=10)
+  (1/zipfR::Cbeta(n*u+1,n*(1-u)+1)) * p^(n*u) * (1-p)^(n*(1-u))
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,10) +
+  stat_function(fun = function(x) binom.combobeta3.pdf(x/10, p=.9, 10))
+
 
