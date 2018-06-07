@@ -72,41 +72,42 @@ function drawBinom(svg, n, p) {
       .x(d => xScale(d.x))
       .y(d => yScale(d.y));
 
-  //const rect = svg.append("rect")
-  //   .attr("width", width + margin.left + margin.right)
-  //   .attr("height", height + margin.top + margin.bottom)
-  //   .styles({"display": "block"})
+  parent = svg
 
-  svg.append("g")
+  parent.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + height + ")")
     .call(xAxis);
 
-  svg.append("g")
+  parent.append("g")
     .attr("class", "y axis")
     .call(yAxis);
 
-  svg.append("path")
+  parent.append("path")
     .datum(data)
     .attr("class", "line")
     .attr("d", line);
 }
 
-const createSvgUnder = parent =>
-      //d3.select(selector)
-      parent.append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+const createGUnder = parent =>
+      parent.append("g")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
 function drawBinoms(parent, nps) {
+  var lastHeight = 0;
   nps.map(np => {
-    const svg = createSvgUnder(parent)
-    drawBinom(svg, np.n, np.p)
+    const g = createGUnder(parent)
+    g.attr("transform", "translate("+0+","+(lastHeight += height-50)+")")
+    drawBinom(g, np.n, np.p)
   })
 }
 
+
+d3.select("#dogs")
+  .attr("width", 800)
+  .attr("height", 800)
 
 drawBinoms(d3.select("#dogs"),
            [{"n": 20, "p": .5},
