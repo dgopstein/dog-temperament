@@ -131,6 +131,9 @@ continuous.binom <- function(x, n, p) {
                   zipfR::Cbeta(x, n+1-x)))
 }
 
+zipfR::Ibeta(.1, 1, 2, lower=FALSE)
+zipfR::Cbeta(1, 2)
+
 continuous.binom(8, 10, .8)
 binom.dt <- data.table(x = seq(0,10,length.out=1000))[, .(x, y=continuous.binom(x, 10, .9))]
 ggplot(binom.dt) + geom_line(aes(x,y))
@@ -150,7 +153,7 @@ plot.continuous.binom <- function(n, p) {
 
 continuous.binom(10, 10, 1)
 
-plot.continuous.binom(10, .8)
+plot.continuous.binom(10, .1)
 
 ggplot(data.frame(sample = rbinom(50000, 4, 0.25)), aes(sample)) + geom_histogram(bins = 4) + xlim(0,4)
 

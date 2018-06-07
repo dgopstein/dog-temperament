@@ -3,7 +3,7 @@
 
 
 
-const mathfn = require('mathfn')
+mathfn = require('mathfn')
 console.log(mathfn)
 
 var margin = {
