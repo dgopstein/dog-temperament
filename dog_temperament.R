@@ -132,7 +132,13 @@ continuous.binom <- function(x, n, p) {
 }
 
 zipfR::Ibeta(.1, 1, 2, lower=FALSE)
+zipfR::Ibeta(.1, 1, 2, lower=TRUE)
+
+zipfR::Ibeta(1, 2, 1, lower=FALSE)
+zipfR::Ibeta(1, 2, 1, lower=TRUE)
+
 zipfR::Cbeta(1, 2)
+?zipfR::Ibeta
 
 continuous.binom(8, 10, .8)
 binom.dt <- data.table(x = seq(0,10,length.out=1000))[, .(x, y=continuous.binom(x, 10, .9))]
@@ -158,10 +164,10 @@ plot.continuous.binom(10, .1)
 ggplot(data.frame(sample = rbinom(50000, 4, 0.25)), aes(sample)) + geom_histogram(bins = 4) + xlim(0,4)
 
 ########## Regularized Beta Function #############
-n.samples <- 250
+n.samples <- 15
 binom.rbeta.cdf <- function(k,p=.5,n=10) (1-zipfR::Rbeta(p, k+1, n-k))
-pdf.rbeta <- data.table(x = seq(0,250,length.out = 1000))[,
-                      .(x, cdf = sapply(x, function(x) binom.rbeta.cdf(x, .01, n.samples)))][,
+pdf.rbeta <- data.table(x = seq(0,n.samples,length.out = 1000))[,
+                      .(x, cdf = sapply(x, function(x) binom.rbeta.cdf(x, .1, n.samples)))][,
                       .(x, cdf, pdf = diff(cdf))]
 ggplot(pdf.rbeta) + geom_line(aes(x/n.samples, pdf))
 
@@ -176,5 +182,9 @@ binom.combobeta3.pdf <- function(u,p=.5,n=10)
 
 ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,10) +
   stat_function(fun = function(x) binom.combobeta3.pdf(x/10, p=.9, 10))
+
+plot(data.frame(x = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
+           y = log(1+c(2, 6, 12, 26, 58, 125, 270, 575, 1200))))
+
 
 

@@ -1,6 +1,6 @@
 /////////////// continuous binomial //////////////////
 
-// http://ac.inf.elte.hu/Vol_039_2013/137_39.pdf
+// http://ac.inf.elte.hu/Vol_039_5013/137_39.pdf
 // The paper claims this is continuous analog of the binomial distribution, but
 // empirically it only resembles the binomial for p <= 0.5
 const ilienko = (x, n, p) => {
@@ -20,6 +20,7 @@ const continuousBinom = (x_in, n, p_in) => {
   var p = isUpper ? 1-p_in : p_in // The function is only well-behaved for p < .5
   //p = 2*p // using zipfR::Ibeta(..., lower=FALSE) in R requires multiplying the result by two. jstat does not require this
   p = Math.min(p, 1-epsilon) // Make sure p isn't exactly 1
+  p = Math.pow(p*1.3, 2.4)
 
   const x = isUpper ? (n+1) - x_in : x_in;
 
@@ -62,7 +63,7 @@ function drawBinom(svg, n, p) {
         .range([0, width]);
   const yScale = d3.scaleLinear()
         //.domain(d3.extent(data, d => d.y))
-        .domain([0, 5])
+        .domain([0, 25])
         .range([height, 0]);
 
   var xAxis = d3.axisBottom(xScale).tickValues([]).tickSizeOuter(0);
@@ -107,12 +108,12 @@ function drawBinoms(parent, nps) {
 
 d3.select("#dogs")
   .attr("width", 800)
-  .attr("height", 800)
+  .attr("height", 1200)
 
 drawBinoms(d3.select("#dogs"),
            [{"n": 20, "p": .5},
             {"n": 2, "p": .5}].concat(
-              _.map(_.range(.01, 1, 0.1), x => {return {"n": 5, "p": x}})))
+              _.map(_.range(.01, 1, 0.05), x => {return {"n": 50, "p": x}})))
 
 
 
