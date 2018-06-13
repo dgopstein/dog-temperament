@@ -31,7 +31,7 @@ const continuousBinom = (x_in, n, p_in) => {
 function binomPoints(n, p) {
   const points = 1000;
 
-  const maxN = n + 1.01
+  const maxN = n + 1.05
 
   const binoms = _.range(0, maxN, maxN/points)
         .map(x => {return {"x": x / maxN, "y": continuousBinom(x, n, p)}})
@@ -51,9 +51,6 @@ var margin = {
 },
     width = 500 - margin.left - margin.right,
     height = 100 - margin.top - margin.bottom;
-
-d3.csvParse(dogs_csv, function(data) {});
-
 
 function drawBinom(svg, n, p) {
   const data = binomPoints(n, p); // popuate data
@@ -101,6 +98,7 @@ function drawBinoms(parent, nps) {
   nps.map(np => {
     const g = createGUnder(parent)
     g.attr("transform", "translate("+0+","+(lastHeight += height-50)+")")
+    g.append("text").text(np.label).attr("transform", "translate("+5+","+(height-5)+")")
     drawBinom(g, np.n, np.p)
   })
 }
@@ -108,12 +106,14 @@ function drawBinoms(parent, nps) {
 
 d3.select("#dogs")
   .attr("width", 800)
-  .attr("height", 1200)
+  .attr("height", 20000)
 
 drawBinoms(d3.select("#dogs"),
-           [{"n": 20, "p": .5},
-            {"n": 2, "p": .5}].concat(
-              _.map(_.range(.01, 1, 0.05), x => {return {"n": 50, "p": x}})))
+           _.map(dogs_json, o => {return {"label": o['name'], "n": o['total'], "p": o['pass']/o['total']}}))
+
+d3.csvParse(dogs_csv, function(data) {
+  console.log(data)
+});
 
 
 
