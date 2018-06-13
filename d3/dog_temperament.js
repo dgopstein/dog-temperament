@@ -29,7 +29,7 @@ const continuousBinom = (x_in, n, p_in) => {
 
 // generate a continuous binomial distribution for all p in [0, 1]
 function binomPoints(n, p) {
-  const points = 1000;
+  const points = 200;
 
   const maxN = n + 1.05
 
@@ -52,40 +52,41 @@ var margin = {
     width = 500 - margin.left - margin.right,
     height = 100 - margin.top - margin.bottom;
 
-function drawBinom(svg, n, p) {
-  const data = binomPoints(n, p); // popuate data
-
-  const xScale = d3.scaleLinear()
-        .domain(d3.extent(data, d => d.x))
-        .range([0, width]);
-  const yScale = d3.scaleLinear()
-        //.domain(d3.extent(data, d => d.y))
-        .domain([0, 25])
-        .range([height, 0]);
-
-  var xAxis = d3.axisBottom(xScale).tickValues([]).tickSizeOuter(0);
-  var yAxis = d3.axisLeft(yScale).tickValues([]).tickSizeOuter(0);
-
-  const line = d3.line()
-      .x(d => xScale(d.x))
-      .y(d => yScale(d.y));
-
-  parent = svg
-
-  parent.append("g")
-    .attr("class", "x axis")
-    .attr("transform", "translate(0," + height + ")")
-    .call(xAxis);
-
-  parent.append("g")
-    .attr("class", "y axis")
-    .call(yAxis);
-
-  parent.append("path")
-    .datum(data)
-    .attr("class", "line")
-    .attr("d", line);
-}
+//function drawBinom(svg, n, p) {
+//  const data = binomPoints(n, p); // popuate data
+//
+//  const xScale = d3.scaleLinear()
+//        .domain(d3.extent(data, d => d.x))
+//        .range([0, width]);
+//  const yScale = d3.scaleLinear()
+//        //.domain(d3.extent(data, d => d.y))
+//        .domain([0, 25])
+//        .range([height, 0]);
+//
+//  var xAxis = d3.axisBottom(xScale).tickValues([]).tickSizeOuter(0);
+//  var yAxis = d3.axisLeft(yScale).tickValues([]).tickSizeOuter(0);
+//
+//  const line = d3.line()
+//      .x(d => xScale(d.x))
+//      .y(d => yScale(d.y));
+//
+//  parent = svg
+//
+//  parent.append("g")
+//    .attr("class", "x axis")
+//    //.style("stroke", "black")
+//    .attr("transform", "translate(0," + height + ")")
+//    .call(xAxis);
+//
+//  parent.append("g")
+//    .attr("class", "y axis")
+//    .call(yAxis);
+//
+//  parent.append("path")
+//    .datum(data)
+//    .attr("class", "line")
+//    .attr("d", line);
+//}
 
 const createGUnder = parent =>
       parent.append("g")
@@ -108,16 +109,28 @@ d3.select("#dogs").attr("width", 800).attr("height", 20000)
 
 const getBars = () => d3.select("#dogs").selectAll('rect')
 
-var bars = getBars().data(dogs_json)
-    .enter().append('rect')
-    .attr('width',  (d, i) => 100/d['total'])
-    .attr('height', (d, i) => 50)
-    .attr('x', (d, i) => 200*(d['pass']/d['total']))
-    .attr('y', (d, i) => 100*i)
+//var bars = getBars().data(dogs_json)
+//    .enter().append('rect')
+//    .attr('width',  (d, i) => 100/d['total'])
+//    .attr('height', (d, i) => 50)
+//    .attr('x', (d, i) => 200*(d['pass']/d['total']))
+//    .attr('y', (d, i) => 100*i)
 
-//drawBinoms(d3.select("#dogs"),
-//           _.map(dogs_json, o => {return {"label": o['name'], "n": o['total'], "p": o['pass']/o['total']}}))
+var lineFunction = d3.line().curve(d3.curveLinear)
+      .x(d => 200* d.x)
+      .y(d => -20*d.y);
+
+const pap = (x) => {console.log(_.filter(x, Math.isNaN)); return x}
+
+var color = d3.scaleOrdinal(d3.schemeCategory10);
 
 
-
+var bars = getBars().data(_.take(dogs_json, 10))
+    .enter()
+    .append("path")
+    .style("fill", "none")
+    .style("stroke", (d, i) => color(d.name))
+    .style("stroke-width", 4)
+    .attr("d", (d, i) => lineFunction(binomPoints(d.total, d.pass/d.total)))
+    .attr("transform", (d, i) => "translate(0," + i*100 + ")")
 
