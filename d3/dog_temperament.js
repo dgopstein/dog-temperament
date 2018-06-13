@@ -94,26 +94,30 @@ const createGUnder = parent =>
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
 function drawBinoms(parent, nps) {
-  var lastHeight = 0;
-  nps.map(np => {
-    const g = createGUnder(parent)
-    g.attr("transform", "translate("+0+","+(lastHeight += height-50)+")")
-    g.append("text").text(np.label).attr("transform", "translate("+5+","+(height-5)+")")
-    drawBinom(g, np.n, np.p)
-  })
+  //var lastHeight = 0;
+  //nps.map(np => {
+    //const g = createGUnder(parent)
+    //g.attr("transform", "translate("+0+","+(lastHeight += height-50)+")")
+    //g.append("text").text(np.label).attr("transform", "translate("+5+","+(height-5)+")")
+    //drawBinom(g, np.n, np.p)
+  //})
 }
 
 
-d3.select("#dogs")
-  .attr("width", 800)
-  .attr("height", 20000)
+d3.select("#dogs").attr("width", 800).attr("height", 20000)
 
-drawBinoms(d3.select("#dogs"),
-           _.map(dogs_json, o => {return {"label": o['name'], "n": o['total'], "p": o['pass']/o['total']}}))
+const getBars = () => d3.select("#dogs").selectAll('rect')
 
-d3.csvParse(dogs_csv, function(data) {
-  console.log(data)
-});
+var bars = getBars().data(dogs_json)
+    .enter().append('rect')
+    .attr('width',  (d, i) => 100/d['total'])
+    .attr('height', (d, i) => 50)
+    .attr('x', (d, i) => 200*(d['pass']/d['total']))
+    .attr('y', (d, i) => 100*i)
+
+//drawBinoms(d3.select("#dogs"),
+//           _.map(dogs_json, o => {return {"label": o['name'], "n": o['total'], "p": o['pass']/o['total']}}))
+
 
 
 
