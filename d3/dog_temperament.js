@@ -19,8 +19,8 @@ const continuousBinom = (x_in, n, p_in) => {
 
   var p = isUpper ? 1-p_in : p_in // The function is only well-behaved for p < .5
   //p = 2*p // using zipfR::Ibeta(..., lower=FALSE) in R requires multiplying the result by two. jstat does not require this
-  p = Math.min(p, 1-epsilon) // Make sure p isn't exactly 1
   p = Math.pow(p*1.3, 2.4)
+  p = Math.max(p, 0+epsilon) // Make sure p isn't exactly 0
 
   const x = isUpper ? (n+1) - x_in : x_in;
 
@@ -28,9 +28,7 @@ const continuousBinom = (x_in, n, p_in) => {
 }
 
 // generate a continuous binomial distribution for all p in [0, 1]
-function binomPoints(n, p) {
-  const points = 200;
-
+function binomPoints(n, p, points) {
   const maxN = n + 1.05
 
   const binoms = _.range(0, maxN, maxN/points)
@@ -52,85 +50,30 @@ var margin = {
     width = 500 - margin.left - margin.right,
     height = 100 - margin.top - margin.bottom;
 
-//function drawBinom(svg, n, p) {
-//  const data = binomPoints(n, p); // popuate data
-//
-//  const xScale = d3.scaleLinear()
-//        .domain(d3.extent(data, d => d.x))
-//        .range([0, width]);
-//  const yScale = d3.scaleLinear()
-//        //.domain(d3.extent(data, d => d.y))
-//        .domain([0, 25])
-//        .range([height, 0]);
-//
-//  var xAxis = d3.axisBottom(xScale).tickValues([]).tickSizeOuter(0);
-//  var yAxis = d3.axisLeft(yScale).tickValues([]).tickSizeOuter(0);
-//
-//  const line = d3.line()
-//      .x(d => xScale(d.x))
-//      .y(d => yScale(d.y));
-//
-//  parent = svg
-//
-//  parent.append("g")
-//    .attr("class", "x axis")
-//    //.style("stroke", "black")
-//    .attr("transform", "translate(0," + height + ")")
-//    .call(xAxis);
-//
-//  parent.append("g")
-//    .attr("class", "y axis")
-//    .call(yAxis);
-//
-//  parent.append("path")
-//    .datum(data)
-//    .attr("class", "line")
-//    .attr("d", line);
-//}
-
-const createGUnder = parent =>
-      parent.append("g")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-
-function drawBinoms(parent, nps) {
-  //var lastHeight = 0;
-  //nps.map(np => {
-    //const g = createGUnder(parent)
-    //g.attr("transform", "translate("+0+","+(lastHeight += height-50)+")")
-    //g.append("text").text(np.label).attr("transform", "translate("+5+","+(height-5)+")")
-    //drawBinom(g, np.n, np.p)
-  //})
-}
-
 
 d3.select("#dogs").attr("width", 800).attr("height", 20000)
 
-const getBars = () => d3.select("#dogs").selectAll('rect')
+var pdfLine = d3.line().curve(d3.curveLinear)
+    .x(d => _.round(200 * d.x, 2))
+    .y(d => _.round(-2 * d.y, 2));
 
-//var bars = getBars().data(dogs_json)
-//    .enter().append('rect')
-//    .attr('width',  (d, i) => 100/d['total'])
-//    .attr('height', (d, i) => 50)
-//    .attr('x', (d, i) => 200*(d['pass']/d['total']))
-//    .attr('y', (d, i) => 100*i)
+const pap = x => {console.log(x); return x}
 
-var lineFunction = d3.line().curve(d3.curveLinear)
-      .x(d => 200* d.x)
-      .y(d => -20*d.y);
-
-const pap = (x) => {console.log(_.filter(x, Math.isNaN)); return x}
-
-var color = d3.scaleOrdinal(d3.schemeCategory10);
-
-
-var bars = getBars().data(_.take(dogs_json, 10))
+var bars = d3.select("#dogs").selectAll('g').data(_.take(dogs_json, 10))
     .enter()
-    .append("path")
-    .style("fill", "none")
-    .style("stroke", (d, i) => color(d.name))
-    .style("stroke-width", 4)
-    .attr("d", (d, i) => lineFunction(binomPoints(d.total, d.pass/d.total)))
-    .attr("transform", (d, i) => "translate(0," + i*100 + ")")
+    .append("g")
+    .attr("transform", (d, i) => "translate(50," + (i*70 + 50) + ")")
+
+bars
+  .append("path")
+  .style("fill", "none")
+  .style("stroke", "black") //(d, i) => color(d.name))
+  .style("stroke-width", 2)
+  .attr("d", (d, i) => pdfLine(binomPoints(d.total, d.pass/d.total, 500)))
+
+bars
+  .append("text")
+  .text((d, i) => d.name)
+  .style("font-family", "'Helvetica', sans-serif")
+  .attr("transform", (d, i) => "translate(0," + 20 + ")")
 
