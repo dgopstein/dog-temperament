@@ -41,39 +41,37 @@ function binomPoints(n, p, points) {
 
 /////////////// D3 Drawing //////////////////
 
-var margin = {
-  top: 2,
-  right: 2,
-  bottom: 0,
-  left: 5
-},
-    width = 500 - margin.left - margin.right,
-    height = 100 - margin.top - margin.bottom;
-
-
 d3.select("#dogs").attr("width", 800).attr("height", 20000)
 
 var pdfLine = d3.line().curve(d3.curveLinear)
-    .x(d => _.round(200 * d.x, 2))
+    .x(d => _.round(250 * d.x, 2))
     .y(d => _.round(-2 * d.y, 2));
 
 const pap = x => {console.log(x); return x}
 
-var bars = d3.select("#dogs").selectAll('g').data(_.take(dogs_json, 10))
-    .enter()
-    .append("g")
-    .attr("transform", (d, i) => "translate(50," + (i*70 + 50) + ")")
+function update(data) {
+  const bars = d3.select("#dogs").selectAll('g').data(data, d => d.name)
 
-bars
-  .append("path")
-  .style("fill", "none")
-  .style("stroke", "black") //(d, i) => color(d.name))
-  .style("stroke-width", 2)
-  .attr("d", (d, i) => pdfLine(binomPoints(d.total, d.pass/d.total, 500)))
+  const barsEnter =
+        bars.enter()
+            .append("g")
+            .attr("transform", (d, i) => "translate(50," + (i*70 + 50) + ")")
+            .merge(bars)
 
-bars
-  .append("text")
-  .text((d, i) => d.name)
-  .style("font-family", "'Helvetica', sans-serif")
-  .attr("transform", (d, i) => "translate(0," + 20 + ")")
+  barsEnter
+    .append("path")
+    .style("fill", "none")
+    .style("stroke", "black") //(d, i) => color(d.name))
+    .style("stroke-width", 2.5)
+    .attr("d", (d, i) => pdfLine(binomPoints(d.total, d.pass/d.total, 500)))
+
+  barsEnter
+    .append("text")
+    .style("font-family", "'Open Sans', 'Helvetica', sans-serif")
+    .attr("transform", (d, i) => "translate(0," + 20 + ")")
+    .text((d, i) => d.name)
+
+  bars.exit().remove()
+}
+
 
