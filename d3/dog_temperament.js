@@ -1,3 +1,16 @@
+const pap = x => {console.log(x); return x}
+
+/////////////// UI ////////////////
+
+const slider = document.getElementById('searchslider')
+noUiSlider.create(slider, {
+	range: {'min': 0, 'max': 1},
+	step: .01,
+	start: [ .7, 1],
+  connect: true,
+
+})
+
 /////////////// continuous binomial //////////////////
 
 // http://ac.inf.elte.hu/Vol_039_5013/137_39.pdf
@@ -41,26 +54,29 @@ function binomPoints(n, p, points) {
 
 /////////////// D3 Drawing //////////////////
 
-d3.select("#dogs").attr("width", 800).attr("height", 20000)
-
-var pdfLine = d3.line().curve(d3.curveLinear)
+var pdfLine = d3.line()//.curve(d3.curveClosed)
     .x(d => _.round(250 * d.x, 2))
-    .y(d => _.round(-2 * d.y, 2));
-
-const pap = x => {console.log(x); return x}
+    .y(d => _.round(-1 * d.y, 2));
 
 function update(data) {
-  const bars = d3.select("#dogs").selectAll('g').data(data, d => d.name)
+  const dog_offset = i => (i+1) * 70
+
+  const svg = d3.select("#dogs")
+        .attr('height', dog_offset(data.length))
+        .attr("width", 400)
+
+
+  const bars = svg.selectAll('g').data(data, (d, i) => [i, d.name])
 
   const barsEnter =
         bars.enter()
             .append("g")
-            .attr("transform", (d, i) => "translate(50," + (i*70 + 50) + ")")
+            .attr("transform", (d, i) => "translate(50," + dog_offset(i) + ")")
             .merge(bars)
 
   barsEnter
     .append("path")
-    .style("fill", "none")
+    .style("fill", "lightgray")
     .style("stroke", "black") //(d, i) => color(d.name))
     .style("stroke-width", 2.5)
     .attr("d", (d, i) => pdfLine(binomPoints(d.total, d.pass/d.total, 500)))
@@ -69,9 +85,16 @@ function update(data) {
     .append("text")
     .style("font-family", "'Open Sans', 'Helvetica', sans-serif")
     .attr("transform", (d, i) => "translate(0," + 20 + ")")
-    .text((d, i) => d.name)
+    .text((d, i) => d.name + " " + "("+d.pass+"/"+d.total+")")
 
   bars.exit().remove()
 }
 
+const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 100))
+const searchByName = search_term => searchByPred(d => new RegExp(search_term || ".*", "i").test(d.name))
+const searchByRange = (low, high) => searchByPred(d => low < d.pass/d.total && d.pass/d.total < high)
 
+searchByName()
+
+d3.select("#searchbox").on("keyup", d => searchByName(d3.event.target.value))
+slider.noUiSlider.on('update', ([low,high]) => searchByRange(low, high))

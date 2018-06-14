@@ -1,25 +1,21 @@
-<!DOCTYPE html>
-<style>
-
-.axis--y .domain {
-  display: none;
-}
-
-</style>
-<svg id="dogs"></svg>
-<!--
-<script src="https://d3js.org/d3.v4.min.js"></script>
-<script src="https://d3js.org/d3-selection-multi.v1.min.js"></script> <!-- for setting styles
-<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
--->
+<body>
+  <input id="searchbox" type="text" placeholder="dog breed" autofocus/>
+  <br />
+  <br />
+  <div id="searchslider" style="width: 200px;"></div>
+  <br />
+  <svg id="dogs"></svg>
+</body>
 
 <script src="lib/d3.v4.min.js"></script>
 <script src="lib/d3-selection-multi.v1.min.js"></script> <!-- for setting styles -->
 <script src="lib/lodash.min.js"></script>
 <script src="lib/jstat.min.js"></script>
+<script src="node_modules/nouislider/distribute/nouislider.js"></script> <!-- double slider for ranges -->
 
 <script src="dog_temperament.json"></script>
 <script src="dog_temperament.js"></script>
 
 <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<link href="node_modules/nouislider/distribute/nouislider.css" rel="stylesheet">
+
