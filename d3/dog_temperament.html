@@ -1,10 +1,17 @@
 <body>
-  <input id="searchbox" type="text" placeholder="dog breed" autofocus/>
+  <input id="search-box" type="text" placeholder="dog breed" autofocus/>
   <br />
   <br />
-  <div id="searchslider" style="width: 200px;"></div>
+  <div>
+    <span>high/low:</span>
+    <div id="search-slider" style="width: 200px;"></div>
+  </div>
+  <div>
+    <span>confidence:</span>
+    <input id="confidence-slider" type="range" min="1" max="100" value="50" class="slider" style="width: 200px;">
+  </div>
   <br />
-  <svg id="dogs"></svg>
+  <div><svg id="dogs"></svg></div>
 </body>
 
 <script src="lib/d3.v4.min.js"></script>
@@ -12,6 +19,8 @@
 <script src="lib/lodash.min.js"></script>
 <script src="lib/jstat.min.js"></script>
 <script src="node_modules/nouislider/distribute/nouislider.js"></script> <!-- double slider for ranges -->
+<!-- <script src="node_modules/wilson-interval/lib/index.js"></script> <!-- wilson score interval-->
+<script src="lib/wilson-interval_browserified.js"></script>
 
 <script src="dog_temperament.json"></script>
 <script src="dog_temperament.js"></script>

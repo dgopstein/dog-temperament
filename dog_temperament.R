@@ -186,5 +186,31 @@ ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,10) +
 plot(data.frame(x = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
            y = log(1+c(2, 6, 12, 26, 58, 125, 270, 575, 1200))))
 
+###################################################################################################
+# Wilson Score interval
+# https://github.com/cran/binom/blob/master/R/binom.confint.R
 
+
+wilson.plot <- function(z2) {
+x <- 10
+n <- 20
+conf.level <- 0.95
+
+p <- x/n
+alpha <- 1 - conf.level
+alpha <- rep(alpha, length = length(p))
+alpha2 <- 0.5 * alpha
+z <- qnorm(1 - alpha2)
+#z2 <- z * z
+p1 <- p + 0.5 * z2/n
+p2 <- z * sqrt((p * (1 - p) + 0.25 * z2/n)/n)
+p3 <- 1 + z2/n
+lcl <- (p1 - p2)/p3
+ucl <- (p1 + p2)/p3
+
+ucl
+}
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,1) +
+  stat_function(fun = wilson.plot)
 

@@ -1,8 +1,10 @@
 const pap = x => {console.log(x); return x}
 
+dogs_json.forEach(d => d.pass_rate = d.pass/d.total)
+
 /////////////// UI ////////////////
 
-const slider = document.getElementById('searchslider')
+const slider = document.getElementById('search-slider')
 noUiSlider.create(slider, {
 	range: {'min': 0, 'max': 1},
 	step: .01,
@@ -54,9 +56,10 @@ function binomPoints(n, p, points) {
 
 /////////////// D3 Drawing //////////////////
 
-var pdfLine = d3.line()//.curve(d3.curveClosed)
-    .x(d => _.round(250 * d.x, 2))
-    .y(d => _.round(-1 * d.y, 2));
+const x_trans = x => _.round(250 * x, 2)
+const y_trans = y => _.round(-1 * y, 2)
+
+var pdfLine = d3.line().x(d => x_trans(d.x)).y(d => y_trans(d.y));
 
 function update(data) {
   const dog_offset = i => (i+1) * 70
@@ -66,35 +69,60 @@ function update(data) {
         .attr("width", 400)
 
 
-  const bars = svg.selectAll('g').data(data, (d, i) => [i, d.name])
+  const curves = svg.selectAll('g').data(data, (d, i) => [i, d.name])
 
-  const barsEnter =
-        bars.enter()
+  const curvesEnter =
+        curves.enter()
             .append("g")
             .attr("transform", (d, i) => "translate(50," + dog_offset(i) + ")")
-            .merge(bars)
+            .merge(curves)
 
-  barsEnter
+  // probability curve
+  curvesEnter
     .append("path")
     .style("fill", "lightgray")
     .style("stroke", "black") //(d, i) => color(d.name))
     .style("stroke-width", 2.5)
-    .attr("d", (d, i) => pdfLine(binomPoints(d.total, d.pass/d.total, 500)))
+    .attr("d", (d, i) => pdfLine(binomPoints(d.total, d.pass_rate, 500)))
 
-  barsEnter
+  // confidence interval lines
+  curvesEnter
+    .append("line")
+    .style("stroke", "red")
+    .style("stroke-width", 2)
+    .attrs((d, i) => {
+      const {low} = wilson(d.pass, d.total, false, {confidence: 0.95})
+
+      return {x1: x_trans(low), y1: y_trans(0),
+              x2: x_trans(low), y2: y_trans(40)}
+    })
+
+  curvesEnter
+    .append("line")
+    .style("stroke", "blue")
+    .style("stroke-width", 2)
+    .attrs((d, i) => {
+      const {high} = wilson(d.pass, d.total, false, {confidence: 0.95})
+
+      return {x1: x_trans(high), y1: y_trans(0),
+              x2: x_trans(high), y2: y_trans(40)}
+    })
+
+  // dog name
+  curvesEnter
     .append("text")
     .style("font-family", "'Open Sans', 'Helvetica', sans-serif")
     .attr("transform", (d, i) => "translate(0," + 20 + ")")
     .text((d, i) => d.name + " " + "("+d.pass+"/"+d.total+")")
 
-  bars.exit().remove()
+  curves.exit().remove()
 }
 
 const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 100))
 const searchByName = search_term => searchByPred(d => new RegExp(search_term || ".*", "i").test(d.name))
-const searchByRange = (low, high) => searchByPred(d => low < d.pass/d.total && d.pass/d.total < high)
+const searchByRange = (low, high) => searchByPred(d => low < d.pass_rate && d.pass_rate < high)
 
 searchByName()
 
-d3.select("#searchbox").on("keyup", d => searchByName(d3.event.target.value))
+d3.select("#search-box").on("keyup", d => searchByName(d3.event.target.value))
 slider.noUiSlider.on('update', ([low,high]) => searchByRange(low, high))
