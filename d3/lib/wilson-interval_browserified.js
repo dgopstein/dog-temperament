@@ -58950,3 +58950,5 @@ function wilsonInterval(proportion, sample, zScore) {
 wilson = require('wilson-interval').default;
 
 },{"wilson-interval":554}]},{},[555]);
+
+((p+z^2/(2*n))/(1+z^2/n)) - ((z/(1+z^2/n))*sqrt((p*(1-p))/n+z^2/(4*n^2)))

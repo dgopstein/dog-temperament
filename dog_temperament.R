@@ -91,18 +91,20 @@ inverse <- function (f, lower = -100, upper = 100) {
   function (y) uniroot((function (x) f(x) - y), lower = lower, upper = upper)[1]
 }
 
-inverse.binconf <- function(lower.bound, total, alpha=0.8) {
+binconf.lower <- function(pass, total, alpha=0.8) binconf(pass, total, alpha)[2]
+binconf.upper <- function(pass, total, alpha=0.8) binconf(pass, total, alpha)[3]
+
+inverse.binconf.lower <- function(lower.bound, total, alpha=0.8) {
   unlist(inverse(function(pass) binconf.lower(pass, total, alpha), 0, total)(lower.bound))
 }
 
-binconf.lower <- function(pass, total, alpha=0.8) binconf(pass, total, alpha)[2]
 
 binconf.lower(8, 10)
 
-inverse.binconf(0.4, 10, alpha=.5)
+inverse.binconf.lower.lower(0.4, 10, alpha=.5)
 
-inverse.binconf.data <- data.table(p = seq(0.01, 0.99, by=.01))[, .(p, pass = sapply(p, function(x) inverse.binconf(x, 10)))]
-ggplot(data=inverse.binconf.data) + geom_line(aes(x=p, y=pass-10*p))
+inverse.binconf.lower.data <- data.table(p = seq(0.01, 0.99, by=.01))[, .(p, pass = sapply(p, function(x) inverse.binconf.lower(x, 10)))]
+ggplot(data=inverse.binconf.lower.data) + geom_line(aes(x=p, y=pass-10*p))
 
 ### integration ###
 pdf.binconf(8, 10)
@@ -191,26 +193,69 @@ plot(data.frame(x = c(2, 3, 4, 5, 6, 7, 8, 9, 10),
 # https://github.com/cran/binom/blob/master/R/binom.confint.R
 
 
-wilson.plot <- function(z2) {
+wilson.plot.upper <- function(conf.level) {
 x <- 10
 n <- 20
-conf.level <- 0.95
-
+#conf.level <- 0.95
 p <- x/n
 alpha <- 1 - conf.level
 alpha <- rep(alpha, length = length(p))
 alpha2 <- 0.5 * alpha
 z <- qnorm(1 - alpha2)
-#z2 <- z * z
+z2 <- z * z
 p1 <- p + 0.5 * z2/n
 p2 <- z * sqrt((p * (1 - p) + 0.25 * z2/n)/n)
 p3 <- 1 + z2/n
 lcl <- (p1 - p2)/p3
 ucl <- (p1 + p2)/p3
 
-ucl
+lcl
 }
 
-ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,1) +
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,20) +
   stat_function(fun = wilson.plot)
 
+binconfalpha.lower <- function(x) sapply(x, function(y) binconf.lower(10, 20, y))
+binconfalpha.upper <- function(x) sapply(x, function(y) binconf.upper(10, 20, y))
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0.01,.99) +
+  stat_function(fun = function(x) binconfalpha.lower(x))
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0.01,.99) +
+  stat_function(fun = function(x) binconfalpha.upper(1-x))
+
+######################## vvvvv Works vvvvv ########################
+
+binconf.domain <- seq(0.01, .99, by=0.001)
+binconf.lower.vals <- sapply(domain, function(x) binconf.lower(5, 10, x))
+binconf.upper.vals <- sapply(domain, function(x) binconf.upper(5, 10, 1-x))
+
+binconf.vals <- rbind(data.table(bound = binconf.lower.vals, conf = binconf.domain),
+                      data.table(bound = binconf.upper.vals, conf = 1+binconf.domain))
+
+binconf.vals[, conf.diff := diff(conf)/diff(bound)]
+
+# ggplot(binconf.vals, aes(bound, conf)) + geom_point() # CDF
+
+ggplot(binconf.vals, aes(bound, conf.diff)) + geom_point() + lims(x=c(0,1), y=c(0, 5))
+
+
+######################## ^^^^^ Works ^^^^^ ########################
+
+
+####################### Derivative of Wilson ######################
+# no continuity: https://sandbox.open.wolframcloud.com/app/objects/8548ff8c-02c6-44ec-a807-9995540362c6#sidebar=compute
+# continuity: https://sandbox.open.wolframcloud.com/app/objects/a53a3380-e668-4f6b-aba1-a87dbba8044f#sidebar=compute
+
+p <- 0.8
+n <- 1000
+
+# with continuity correction
+#binom.continuity.deriv <- function(z) -((2*z-z^2/sqrt(-2-1/n+4*p+4*n*(1-p)*p+z^2)-sqrt(-2-1/n+4*p+4*n*(1-p)*p+z^2))/(2*(n+z^2))-(z*(-1+2*n*p+z^2-z*sqrt(-2-1/n+4*p+4*n*(1-p)*p+z^2)))/(n+z^2)^2)
+binom.deriv <- function(z)
+  (2*z^2*sqrt(((1-p)*p)/n+z^2/(4*n^2)))/(n*(1+z^2/n)^2)-(2*z*(p+z^2/(2*n)))/(n*(1+z^2/n)^2)+z/(n*(1+z^2/n))-z^2/(4*n^2*sqrt(((1-p)*p)/n+z^2/(4*n^2))*(1+z^2/n))-sqrt(((1-p)*p)/n+z^2/(4*n^2))/(1+z^2/n)
+
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(-20,1000) +
+  stat_function(fun = binom.deriv)
+ 
+ 
