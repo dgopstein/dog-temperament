@@ -99,10 +99,6 @@ inverse.binconf.lower <- function(lower.bound, total, alpha=0.8) {
 }
 
 
-binconf.lower(8, 10)
-
-inverse.binconf.lower.lower(0.4, 10, alpha=.5)
-
 inverse.binconf.lower.data <- data.table(p = seq(0.01, 0.99, by=.01))[, .(p, pass = sapply(p, function(x) inverse.binconf.lower(x, 10)))]
 ggplot(data=inverse.binconf.lower.data) + geom_line(aes(x=p, y=pass-10*p))
 
@@ -225,9 +221,9 @@ ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0.01,.99) +
 
 ######################## vvvvv Works vvvvv ########################
 
-binconf.domain <- seq(0.01, .99, by=0.001)
-binconf.lower.vals <- sapply(domain, function(x) binconf.lower(5, 10, x))
-binconf.upper.vals <- sapply(domain, function(x) binconf.upper(5, 10, 1-x))
+binconf.domain <- seq(0.1, .9, by=0.1)
+binconf.lower.vals <- sapply(binconf.domain, function(x) binconf.lower(8, 10, x))
+binconf.upper.vals <- sapply(binconf.domain, function(x) binconf.upper(8, 10, 1-x))
 
 binconf.vals <- rbind(data.table(bound = binconf.lower.vals, conf = binconf.domain),
                       data.table(bound = binconf.upper.vals, conf = 1+binconf.domain))
@@ -236,8 +232,10 @@ binconf.vals[, conf.diff := diff(conf)/diff(bound)]
 
 # ggplot(binconf.vals, aes(bound, conf)) + geom_point() # CDF
 
-ggplot(binconf.vals, aes(bound, conf.diff)) + geom_point() + lims(x=c(0,1), y=c(0, 5))
+ggplot(binconf.vals, aes(bound, conf.diff)) + geom_point() + lims(x=c(0,1), y=c(0, 8))
 
+# The previous is equivalent to Derivative[InverseWilson[InverseCdfNormal[x]]],
+# which is a pain to symbolically formulate
 
 ######################## ^^^^^ Works ^^^^^ ########################
 
@@ -254,8 +252,29 @@ n <- 1000
 binom.deriv <- function(z)
   (2*z^2*sqrt(((1-p)*p)/n+z^2/(4*n^2)))/(n*(1+z^2/n)^2)-(2*z*(p+z^2/(2*n)))/(n*(1+z^2/n)^2)+z/(n*(1+z^2/n))-z^2/(4*n^2*sqrt(((1-p)*p)/n+z^2/(4*n^2))*(1+z^2/n))-sqrt(((1-p)*p)/n+z^2/(4*n^2))/(1+z^2/n)
 
+qnorm(1 - (0.5 * (1 - conf.level)))
 
-ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(-20,1000) +
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,5) +
   stat_function(fun = binom.deriv)
- 
- 
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,1) +
+  stat_function(fun = qnorm)
+
+sigma <- 1
+mu <- 0.7
+x <- 0.2
+E <- exp(1)
+qnorm.deriv <- function(x) exp(1)^(pracma::erfcinv(2*x)^2)*sqrt(2*pi)*sigma
+library(pracma)
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,1) +
+  stat_function(fun = qnorm.deriv)
+
+
+
+not_inverse.wilson.qnorm.deriv <- function(x) (2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)-(2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))*(p+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(2*n)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)+(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(pi/2)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2)/(2*n^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2))*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)
+inverse.wilson.qnorm.deriv <- function(x) ((2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)-(2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))*(p+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(2*n)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)+(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(pi/2)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2)/(2*n^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2))*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))*Derivative(1)(Inverse)(-(((mu-sqrt(2)*sigma*erfcinv(2*x))*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))+(p+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(2*n))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))
+
+
+ggplot(data = data.frame(x = 0), mapping = aes(x = x)) + xlim(0,1) +
+  stat_function(fun = inverse.wilson.qnorm.deriv)

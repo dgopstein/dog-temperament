@@ -7820,6 +7820,7 @@ exports.create = function create(type) {
       convert: function (x) {
         // note: conversion from number to BigNumber can fail if x has >15 digits
         if (digits(x) > 15) {
+          return type.BigNumber(x)
           throw new TypeError('Cannot implicitly convert a number with >15 significant digits to BigNumber ' +
           '(value: ' + x + '). ' +
           'Use function bignumber(x) to convert to BigNumber.');
@@ -58950,5 +58951,3 @@ function wilsonInterval(proportion, sample, zScore) {
 wilson = require('wilson-interval').default;
 
 },{"wilson-interval":554}]},{},[555]);
-
-((p+z^2/(2*n))/(1+z^2/n)) - ((z/(1+z^2/n))*sqrt((p*(1-p))/n+z^2/(4*n^2)))

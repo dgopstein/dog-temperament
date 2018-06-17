@@ -13,46 +13,48 @@ noUiSlider.create(slider, {
 
 })
 
-/////////////// continuous binomial //////////////////
+/////////////// wilson points //////////////////
 
-// http://ac.inf.elte.hu/Vol_039_5013/137_39.pdf
-// The paper claims this is continuous analog of the binomial distribution, but
-// empirically it only resembles the binomial for p <= 0.5
-const ilienko = (x, n, p) => {
-  if (x <= 0) return 0;
-  if (x >= n+1) return 0;
+const wilson = (up, total, conf) => {
+  if (total <= 0 || total < up) return 0
 
-  return this.jStat.ibeta(p, x, n+1) /
-         this.jStat.betafn(  x, n+1-x)
+  const z = conf ? qnorm(1 - (0.5 * (1 - conf))) : 2.326348
+  const phat = up/total, z2 = z*z;
+
+  const base = phat + z2/(2*total)
+  const tail =  z*Math.sqrt((phat*(1 - phat) + z2/(4*total))/total)
+  const divisor = (1 + z2/total)
+
+  return {low:  (base - tail)/divisor,
+          high: (base + tail)/divisor}
 }
 
-// Mirror the results of ilienko about p = 0.5 so that the function mimics
-// the binomial distribution for all p in [0, 1]
-const epsilon = 1e-20
-const continuousBinom = (x_in, n, p_in) => {
-  const isUpper = p_in > 0.5
+const wilson_points = (pass, total, n_points) => {
+  const increment = 1/(n_points+1)
 
-  var p = isUpper ? 1-p_in : p_in // The function is only well-behaved for p < .5
-  //p = 2*p // using zipfR::Ibeta(..., lower=FALSE) in R requires multiplying the result by two. jstat does not require this
-  p = Math.pow(p*1.3, 2.4)
-  p = Math.max(p, 0+epsilon) // Make sure p isn't exactly 0
+  const domain = _.range(0, 1-(0.5*increment), increment)
 
-  const x = isUpper ? (n+1) - x_in : x_in;
+  const wilsons_low = _.map(domain, x => {
+    return {bound:  wilson(pass, total, x).low,
+            conf: x}})
 
-  return ilienko(x, n, p)
+  const wilsons_high = _.map(domain, x => {
+    return {bound:  wilson(pass, total, 1-x).high,
+            conf: 1+x}})
+
+  const wilsons = _.concat(wilsons_low, wilsons_high)
+
+  const inverse_diff =
+          _.zip(wilsons.slice(0,-1), _.tail(wilsons))
+            .map(([x1, x2]) => {
+              const diff_conf = x2.conf - x1.conf
+              const diff_bound = x2.bound - x1.bound
+              const mid_bound = (x1.bound + x2.bound)/2
+              return {bound: mid_bound, conf: diff_conf/diff_bound}})
+
+  return _.sortBy(_.filter(inverse_diff.map(o => {return {x: o.bound, y: -o.conf}}), o => o.y > 10e-10), "x")
 }
 
-// generate a continuous binomial distribution for all p in [0, 1]
-function binomPoints(n, p, points) {
-  const maxN = n + 1.05
-
-  const binoms = _.range(0, maxN, maxN/points)
-        .map(x => {return {"x": x / maxN, "y": continuousBinom(x, n, p)}})
-  const auc = _.sumBy(binoms, o => o.y) / points
-  const scaledBinoms = binoms.map(o => _.update(o, ['y'], y => y / auc))
-
-  return scaledBinoms;
-}
 
 /////////////// D3 Drawing //////////////////
 
@@ -83,7 +85,7 @@ function update(data) {
     .style("fill", "lightgray")
     .style("stroke", "black") //(d, i) => color(d.name))
     .style("stroke-width", 2.5)
-    .attr("d", (d, i) => pdfLine(binomPoints(d.total, d.pass_rate, 500)))
+    .attr("d", (d, i) => pdfLine(wilson_points(d.pass, d.total, 500)))
 
   // confidence interval lines
   curvesEnter
@@ -91,7 +93,7 @@ function update(data) {
     .style("stroke", "red")
     .style("stroke-width", 2)
     .attrs((d, i) => {
-      const {low} = wilson(d.pass, d.total, false, {confidence: 0.95})
+      const {low} = wilson(d.pass, d.total, 0.9)
 
       return {x1: x_trans(low), y1: y_trans(0),
               x2: x_trans(low), y2: y_trans(40)}
@@ -102,7 +104,7 @@ function update(data) {
     .style("stroke", "blue")
     .style("stroke-width", 2)
     .attrs((d, i) => {
-      const {high} = wilson(d.pass, d.total, false, {confidence: 0.95})
+      const {high} = wilson(d.pass, d.total, 0.9)
 
       return {x1: x_trans(high), y1: y_trans(0),
               x2: x_trans(high), y2: y_trans(40)}
@@ -118,7 +120,7 @@ function update(data) {
   curves.exit().remove()
 }
 
-const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 100))
+const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 10))
 const searchByName = search_term => searchByPred(d => new RegExp(search_term || ".*", "i").test(d.name))
 const searchByRange = (low, high) => searchByPred(d => low < d.pass_rate && d.pass_rate < high)
 
