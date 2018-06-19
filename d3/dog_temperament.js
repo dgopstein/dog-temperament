@@ -4,14 +4,16 @@ dogs_json.forEach(d => d.pass_rate = d.pass/d.total)
 
 /////////////// UI ////////////////
 
-const slider = document.getElementById('search-slider')
-noUiSlider.create(slider, {
+const thresh_slider = document.getElementById('thresh-slider')
+noUiSlider.create(thresh_slider, {
 	range: {'min': 0, 'max': 1},
 	step: .01,
 	start: [ .7, 1],
   connect: true,
 
 })
+
+const conf_slider = document.getElementById('conf-slider')
 
 /////////////// wilson points //////////////////
 
@@ -29,10 +31,12 @@ const wilson = (up, total, conf) => {
           high: (base + tail)/divisor}
 }
 
-const wilson_points = (pass, total, n_points) => {
-  const increment = 1/(n_points+1)
+const epsilon = 1e-20
 
-  const domain = _.range(0, 1-(0.5*increment), increment)
+const wilson_points = (pass, total, n_points) => {
+  const increment = 1/(n_points+2)
+
+  const domain = _.concat(_.range(0, 1-(0.5*increment), increment), 1-epsilon)
 
   const wilsons_low = _.map(domain, x => {
     return {bound:  wilson(pass, total, x).low,
@@ -52,14 +56,14 @@ const wilson_points = (pass, total, n_points) => {
               const mid_bound = (x1.bound + x2.bound)/2
               return {bound: mid_bound, conf: diff_conf/diff_bound}})
 
-  return _.sortBy(_.filter(inverse_diff.map(o => {return {x: o.bound, y: -o.conf}}), o => o.y > 10e-10), "x")
+  return _.sortBy(_.filter(inverse_diff.map(o => {return {x: o.bound, y: -o.conf}}), o => o.y > epsilon), "x")
 }
 
 
 /////////////// D3 Drawing //////////////////
 
 const x_trans = x => _.round(250 * x, 2)
-const y_trans = y => _.round(-1 * y, 2)
+const y_trans = y => _.round(-2 * y, 2)
 
 var pdfLine = d3.line().x(d => x_trans(d.x)).y(d => y_trans(d.y));
 
@@ -88,27 +92,38 @@ function update(data) {
     .attr("d", (d, i) => pdfLine(wilson_points(d.pass, d.total, 500)))
 
   // confidence interval lines
+  d3.selectAll(".conf-line").remove()
+
   curvesEnter
     .append("line")
+    .attr("class", "conf-line")
     .style("stroke", "red")
     .style("stroke-width", 2)
     .attrs((d, i) => {
-      const {low} = wilson(d.pass, d.total, 0.9)
+      const {low} = wilson(d.pass, d.total, conf_thresh)
 
       return {x1: x_trans(low), y1: y_trans(0),
-              x2: x_trans(low), y2: y_trans(40)}
+              x2: x_trans(low), y2: y_trans(20)}
     })
 
   curvesEnter
     .append("line")
+    .attr("class", "conf-line")
     .style("stroke", "blue")
     .style("stroke-width", 2)
     .attrs((d, i) => {
-      const {high} = wilson(d.pass, d.total, 0.9)
+      const {high} = wilson(d.pass, d.total, conf_thresh)
 
       return {x1: x_trans(high), y1: y_trans(0),
-              x2: x_trans(high), y2: y_trans(40)}
-    })
+              x2: x_trans(high), y2: y_trans(20)}
+    }).exit().remove()
+
+  // bottom line
+  curvesEnter
+    .append("line")
+    .style("stroke", "black")
+    .style("stroke-width", 2.5)
+    .attrs({x1: 0, y1: 0, x2: x_trans(1), y2: 0})
 
   // dog name
   curvesEnter
@@ -122,9 +137,27 @@ function update(data) {
 
 const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 10))
 const searchByName = search_term => searchByPred(d => new RegExp(search_term || ".*", "i").test(d.name))
-const searchByRange = (low, high) => searchByPred(d => low < d.pass_rate && d.pass_rate < high)
+const searchByRange = (thresh_low, thresh_high) => searchByPred(d => {
+  const {low, high} = wilson(d.pass, d.total, conf_thresh)
+  return thresh_low < low && high < thresh_high
+})
+
+var last_search = undefined
+
+const setConf = conf => {
+  conf_thresh = conf;
+  last_search()
+}
+
+var conf_thresh = 0.8
+
+const cache_and_run_search = (f, args) => {
+  last_search = () => f.apply(null, args)
+  last_search()
+}
+
+d3.select("#conf-slider").on("change"/*"input"*/, e => setConf(d3.event.target.value/100))
+d3.select("#search-box").on("keyup", e => cache_and_run_search(searchByName, [d3.event.target.value]))
+thresh_slider.noUiSlider.on('update', ([low,high]) => cache_and_run_search(searchByRange, [low, high]))
 
 searchByName()
-
-d3.select("#search-box").on("keyup", d => searchByName(d3.event.target.value))
-slider.noUiSlider.on('update', ([low,high]) => searchByRange(low, high))
