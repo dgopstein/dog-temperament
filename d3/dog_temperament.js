@@ -13,6 +13,8 @@ function updateSliderValue(slider, handle = 0) {
   _.zip(children, values).forEach(([c, v]) => c.dataset.value = v.replace(/^0/,''))
 }
 
+const search_box = document.getElementById('search-box')
+
 const low_thresh_slider = document.getElementById('low-thresh-slider')
 noUiSlider.create(low_thresh_slider, {
 	range: {'min': 0, 'max': 1},
@@ -106,7 +108,8 @@ var pdfLine = d3.line().x(d => x_trans(d.x)).y(d => y_trans(d.y));
 
 const revByName = (a, b) => -a.name.toLowerCase().localeCompare(b.name.toLowerCase())
 
-function update(data) {
+function updateDogs(data) {
+  console.log("update", data.length)
   const barkline_height = 70
   const n_dogs = data.length
   const dog_offset = i => (i+1) * barkline_height
@@ -187,7 +190,6 @@ function update(data) {
       .attrs({x1: 0, y1: 0, x2: x_trans(1), y2: 0})
   }
 
-
   // dog name
   function dog_name(curvesEnter) {
     curvesEnter
@@ -210,40 +212,41 @@ function update(data) {
   curves.exit().remove()
 }
 
-const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 20))
-const searchByName = search_term => searchByPred(d => new RegExp(search_term || ".*", "i").test(d.name))
-const searchByLowHighRange = (low_thresh_low, low_thresh_high, high_thresh_low, high_thresh_high) =>
-      searchByPred(d => {
-        const {low, high} = wilson(d.pass, d.total, conf_thresh)
-        return low_thresh_low < low && low < low_thresh_high &&
-               high_thresh_low < high && high < high_thresh_high
-      })
+const searchByPred = pred => updateDogs(_.take(_.filter(dogs_json, pred), 20))
+const searchDogs = params => {
+  const {low1, low2, high1, high2, name} = params
+  const name_regex = new RegExp(name || ".*", "i")
 
-var last_search = undefined
+  return searchByPred(d => {
+    const contains_name = name_regex.test(d.name)
 
-const setConf = conf => {
-  conf_thresh = conf;
-  last_search()
-}
+    const {low, high} = wilson(d.pass, d.total, conf_thresh)
+    const contains_conf = low1 < low && low < low2 && high1 < high && high < high2
+
+    return contains_name && contains_conf
+})}
 
 var conf_thresh = 0.8
-
-const cache_and_run_search = (f, args) => {
-  last_search = () => f.apply(null, args)
-  last_search()
-}
+const setConf = conf => conf_thresh = conf
 
 const lowThreshRange = () => low_thresh_slider.noUiSlider.get().map(parseFloat)
 const highThreshRange = () => high_thresh_slider.noUiSlider.get().map(parseFloat)
+const nameQuery = () => search_box.value
 
-d3.select("#conf-slider").on("change"/*"input"*/, )
-d3.select("#search-box").on("keyup", e => cache_and_run_search(searchByName, [d3.event.target.value]))
-low_thresh_slider.noUiSlider.on('update', ([low,high]) => {
-  updateSliderValue(low_thresh_slider)
-  cache_and_run_search(searchByLowHighRange, [low, high].concat(highThreshRange()))})
-high_thresh_slider.noUiSlider.on('update', ([low,high]) => {
-  updateSliderValue(high_thresh_slider)
-  cache_and_run_search(searchByLowHighRange, lowThreshRange().concat([low, high]))})
+const dogParams = () => {return {
+  name: nameQuery(),
+  low1: lowThreshRange()[0],
+  low2: lowThreshRange()[1],
+  high1: highThreshRange()[0],
+  high2: highThreshRange()[1]
+}}
+
+const dogParamSearch = () => searchDogs(dogParams())
+
+d3.select("#conf-slider").on("change"/*"input"*/, () => dogParamSearch())
+d3.select("#search-box").on("keyup", e => dogParamSearch())
+low_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(low_thresh_slider); dogParamSearch()})
+high_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(high_thresh_slider); dogParamSearch()})
 conf_slider.noUiSlider.on('update', x => {updateSliderValue(conf_slider); setConf(x)})
 
-searchByName()
+dogParamSearch()

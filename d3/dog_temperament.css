@@ -31,9 +31,9 @@ body {
 .noUi-base .noUi-handle {
   background-color: #87ceeb;
   border-radius: 20px;
-  border: 1px solid #000;
+  border: 1px solid #888;
   box-shadow: none;
-  color: #FFFFFF;
+  color: #000;
   display: table;
   font-size: 15px;
   height: 30px;
