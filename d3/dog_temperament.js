@@ -7,10 +7,14 @@ dogs_json.forEach(d => d.pass_rate = d.pass/d.total)
 
 /////////////// UI ////////////////
 
-function updateSliderValue(slider, handle = 0) {
+function updateSliderValue(slider, type="float") {
   children = slider.getElementsByClassName('noUi-handle')
   values = _.flatten([slider.noUiSlider.get()])
-  _.zip(children, values).forEach(([c, v]) => c.dataset.value = v.replace(/^0/,''))
+  if (type == "float") {
+    _.zip(children, values).forEach(([c, v]) => c.dataset.value = v.replace(/^0/,''))
+  } else if (type == "int") {
+    _.zip(children, values).forEach(([c, v]) => c.dataset.value = parseInt(v))
+  }
 }
 
 const search_box = document.getElementById('search-box')
@@ -36,6 +40,14 @@ noUiSlider.create(conf_slider, {
 	range: {'min': 0, 'max': 0.995},
 	step: .01,
 	start: [.8],
+  connect: true,
+})
+
+const max_results_slider = document.getElementById('max-results-slider')
+noUiSlider.create(max_results_slider, {
+	range: {'min': 0, 'max': 250},
+	step: .01,
+	start: [20],
   connect: true,
 })
 
@@ -108,10 +120,15 @@ var pdfLine = d3.line().x(d => x_trans(d.x)).y(d => y_trans(d.y));
 
 const revByName = (a, b) => -a.name.toLowerCase().localeCompare(b.name.toLowerCase())
 
-function updateDogs(data) {
+function updateDogs(all_data, n) {
+  const data = _.take(all_data, n)
   const barkline_height = 80
   const n_dogs = data.length
+  const n_total_dogs = all_data.length
   const dog_offset = i => (i+1) * barkline_height
+
+  document.getElementById("n-shown-dogs").innerHTML = n_dogs
+  document.getElementById("n-total-dogs").innerHTML = n_total_dogs
 
   const svg = d3.select("#dogs")
         .attr('height', dog_offset(data.length))
@@ -213,7 +230,9 @@ function updateDogs(data) {
   curves.exit().remove()
 }
 
-const searchByPred = pred => updateDogs(_.take(_.filter(dogs_json, pred), 20))
+var max_results = 20
+
+const searchByPred = pred => updateDogs(_.filter(dogs_json, pred), max_results)
 const searchDogs = params => {
   const {low1, low2, high1, high2, name} = params
   const name_regex = new RegExp(name || ".*", "i")
@@ -249,5 +268,7 @@ d3.select("#search-box").on("keyup", e => dogParamSearch())
 low_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(low_thresh_slider); dogParamSearch()})
 high_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(high_thresh_slider); dogParamSearch()})
 conf_slider.noUiSlider.on('update', x => {updateSliderValue(conf_slider); setConf(x); dogParamSearch()})
+max_results_slider.noUiSlider.on('update', x => {updateSliderValue(max_results_slider, "int"); max_results=x; dogParamSearch()})
+
 
 dogParamSearch()
