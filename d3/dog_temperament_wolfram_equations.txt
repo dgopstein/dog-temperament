@@ -1,0 +1,36 @@
+;; This buffer is for text that is not saved, and for Lisp evaluation.
+;; To create a file, visit it with C-x C-f and enter text in its buffer.
+
+ConditionalExpression[(
+  2 E^InverseErfc[2 x]^2 Sqrt[
+   2 \[Pi]] \[Sigma] (\[Mu] - 
+     Sqrt[2] \[Sigma] InverseErfc[2 x])^2 Sqrt[((1 - p) p)/
+    n + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/(4 n^2)])/(
+  n (1 + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/n)^2) - (
+  2 E^InverseErfc[2 x]^2 Sqrt[
+   2 \[Pi]] \[Sigma] (\[Mu] - 
+     Sqrt[2] \[Sigma] InverseErfc[2 x]) (p + (\[Mu] - 
+       Sqrt[2] \[Sigma] InverseErfc[2 x])^2/(2 n)))/(
+  n (1 + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/n)^2) + (
+  E^InverseErfc[2 x]^2 Sqrt[
+   2 \[Pi]] \[Sigma] (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x]))/(
+  n (1 + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/n)) - (
+  E^InverseErfc[2 x]^2 Sqrt[\[Pi]/
+   2] \[Sigma] (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2)/(
+  2 n^2 Sqrt[((1 - p) p)/
+    n + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/(
+    4 n^2)] (1 + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/n)) - (
+  E^InverseErfc[2 x]^2 Sqrt[
+   2 \[Pi]] \[Sigma] Sqrt[((1 - p) p)/
+    n + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/(4 n^2)])/(
+  1 + (\[Mu] - Sqrt[2] \[Sigma] InverseErfc[2 x])^2/n), 0 <= x <= 1]
+
+
+# derivative of wilson
+(2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)-(2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))*(p+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(2*n)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)+(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(pi/2)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2)/(2*n^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2))*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)
+
+
+
+# derivative of inverse wilson
+((2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)-(2*E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))*(p+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(2*n)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n)^2)+(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x)))/(n*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(pi/2)*sigma*(mu-sqrt(2)*sigma*erfcinv(2*x))^2)/(2*n^2*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2))*(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))-(E^erfcinv(2*x)^2*sqrt(2*pi)*sigma*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))*Derivative(1)(Inverse)(-(((mu-sqrt(2)*sigma*erfcinv(2*x))*sqrt(((1-p)*p)/n+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(4*n^2)))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))+(p+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/(2*n))/(1+(mu-sqrt(2)*sigma*erfcinv(2*x))^2/n))
+
