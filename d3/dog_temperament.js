@@ -117,13 +117,8 @@ function updateDogs(data) {
         .attr('height', dog_offset(data.length))
         .attr("width", 400)
 
-  var svgDefs = svg.append('defs');
-
-  var mainGradient = svgDefs.append('linearGradient')
-      .attr('id', 'mainGradient');
-
   const curves = svg.selectAll('.bark-line')
-        .data(data.reverse(), (d, i) => [d.name, i])
+        .data(data.reverse(), (d, i) => Math.random())
 
   const curvesEnter =
         curves.enter()
@@ -132,11 +127,12 @@ function updateDogs(data) {
             .attr("transform", (d, i) => "translate(50," + dog_offset(n_dogs - i - 1) + ")")
             .merge(curves)
 
+  const bark_fill = "#e6e6e6"
   // probability curve
   function bark_line(curvesEnter) {
     curvesEnter
       .append("path")
-      .style("fill", "rgba(225,225,225,1)")
+      .style("fill", bark_fill)
       .style("stroke", "black") //(d, i) => color(d.name))
       .style("stroke-width", 2.5)
       .attr("d", (d, i) => pdfLine(scaled_wilson_points(d.pass, d.total, 500, max_bar_height)))
@@ -144,7 +140,8 @@ function updateDogs(data) {
 
   const max_bar_height = .45*barkline_height
   const bar_trans = y => _.max([y_trans(y), -max_bar_height])
-  const conf_height = bar_trans(3);
+  const conf_height = 4;
+  const conf_y = -2;
 
   function conf_rect(curvesEnter) {
     curvesEnter
@@ -153,10 +150,9 @@ function updateDogs(data) {
       .style("fill", "#87ceeb")
       .attrs((d, i) => {
         const {low, high} = wilson(d.pass, d.total, conf_thresh)
-        const height = -conf_height
 
-        return {x: x_trans(low), y: .3*-height,
-                height: height*.8,
+        return {x: x_trans(low), y: conf_y,
+                height: conf_height,
                 width: x_trans(high)-x_trans(low)}
       })
   }
@@ -169,24 +165,19 @@ function updateDogs(data) {
       .style("stroke-width", 3)
       .attrs((d, i) => {
         const thresh_x = wilson(d.pass, d.total, conf_thresh)[thresh_type]
-        const height = conf_height
 
-        return {x1: x_trans(thresh_x), y1: -height,
-                x2: x_trans(thresh_x), y2: height}})
+        return {x1: x_trans(thresh_x), y1: 2*conf_y,
+                x2: x_trans(thresh_x), y2: -2*conf_y}})
   }
 
   function mid_line(curvesEnter) {
     curvesEnter.append("line")
       .attr("class", "line")
-      .style("stroke", "#777")
-      .style("stroke-width", 2)
-      .style("stroke-dasharray", ("6, 6"))
+      .style("stroke", bark_fill)
+      .style("stroke-width", 4)
       .attrs((d, i) => {
-        const height = _.find(scaled_wilson_points(d.pass, d.total, 500),
-                              o => Math.abs(o.x - d.pass_rate) < 0.01).y
-
-        return {x1: x_trans(d.pass_rate), y1: y_trans(height),
-                x2: x_trans(d.pass_rate), y2: 0}})
+        return {x1: x_trans(d.pass_rate), y1: conf_y,
+                x2: x_trans(d.pass_rate), y2: -conf_y}})
   }
 
   // bottom line
@@ -206,13 +197,14 @@ function updateDogs(data) {
       .text((d, i) => d.name + " " + "("+d.pass+"/"+d.total+")")
   }
 
+  //d3.selectAll(".bark-line").remove()
   d3.selectAll(".conf-rect").remove()
   d3.selectAll(".conf-line").remove()
 
   // z-depth
   bark_line(curvesEnter)
-  mid_line(curvesEnter)
   conf_rect(curvesEnter)
+  mid_line(curvesEnter)
   conf_line(curvesEnter, "low")
   conf_line(curvesEnter, "high")
   //bottom_line(curvesEnter)
@@ -230,7 +222,7 @@ const searchDogs = params => {
     const contains_name = name_regex.test(d.name)
 
     const {low, high} = wilson(d.pass, d.total, conf_thresh)
-    const contains_conf = low1 < low && low < low2 && high1 < high && high < high2
+    const contains_conf = low1 <= low && low <= low2 && high1 <= high && high <= high2
 
     return contains_name && contains_conf
 })}
@@ -256,6 +248,6 @@ d3.select("#conf-slider").on("change"/*"input"*/, () => dogParamSearch())
 d3.select("#search-box").on("keyup", e => dogParamSearch())
 low_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(low_thresh_slider); dogParamSearch()})
 high_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(high_thresh_slider); dogParamSearch()})
-conf_slider.noUiSlider.on('update', x => {updateSliderValue(conf_slider); setConf(x)})
+conf_slider.noUiSlider.on('update', x => {updateSliderValue(conf_slider); setConf(x); dogParamSearch()})
 
 dogParamSearch()
