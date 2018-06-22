@@ -109,7 +109,6 @@ var pdfLine = d3.line().x(d => x_trans(d.x)).y(d => y_trans(d.y));
 const revByName = (a, b) => -a.name.toLowerCase().localeCompare(b.name.toLowerCase())
 
 function updateDogs(data) {
-  console.log("update", data.length)
   const barkline_height = 70
   const n_dogs = data.length
   const dog_offset = i => (i+1) * barkline_height
@@ -122,9 +121,6 @@ function updateDogs(data) {
 
   var mainGradient = svgDefs.append('linearGradient')
       .attr('id', 'mainGradient');
-
-  //mainGradient.append('stop').style("stop-color", "#3f51b5").attr("fill-opacity", "0").attr('offset', '0')
-  //mainGradient.append('stop').style("stop-color", "#009688").attr('offset', '1')
 
   const curves = svg.selectAll('.bark-line')
         .data(data.reverse(), (d, i) => [d.name, i])
@@ -154,8 +150,6 @@ function updateDogs(data) {
     curvesEnter
       .append("rect")
       .attr("class", "conf-rect")
-    //.style("fill", "url(#mainGradient)")
-    //.append("linearGradient", "rgba(60,80,10, .2)")
       .style("fill", "#87ceeb")
       .attrs((d, i) => {
         const {low, high} = wilson(d.pass, d.total, conf_thresh)
@@ -181,6 +175,20 @@ function updateDogs(data) {
                 x2: x_trans(thresh_x), y2: height}})
   }
 
+  function mid_line(curvesEnter) {
+    curvesEnter.append("line")
+      .attr("class", "line")
+      .style("stroke", "#777")
+      .style("stroke-width", 2)
+      .style("stroke-dasharray", ("6, 6"))
+      .attrs((d, i) => {
+        const height = _.find(scaled_wilson_points(d.pass, d.total, 500),
+                              o => Math.abs(o.x - d.pass_rate) < 0.01).y
+
+        return {x1: x_trans(d.pass_rate), y1: y_trans(height),
+                x2: x_trans(d.pass_rate), y2: 0}})
+  }
+
   // bottom line
   function bottom_line(curvesEnter) {
     curvesEnter
@@ -203,6 +211,7 @@ function updateDogs(data) {
 
   // z-depth
   bark_line(curvesEnter)
+  mid_line(curvesEnter)
   conf_rect(curvesEnter)
   conf_line(curvesEnter, "low")
   conf_line(curvesEnter, "high")
