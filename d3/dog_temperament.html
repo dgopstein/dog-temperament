@@ -1,18 +1,22 @@
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<link href="node_modules/nouislider/distribute/nouislider.css" rel="stylesheet">
+<link href="dog_temperament.css" rel="stylesheet">
+
 <body>
   <input id="search-box" type="text" placeholder="dog breed" autofocus/>
   <br />
   <br />
-  <div>
-    <span>lower bound range:</span>
-    <div id="low-thresh-slider" style="width: 200px;"></div>
+  <div class="slider-box">
+    <div class="slider-label">Lower Bound Range</div>
+    <div id="low-thresh-slider" class="slider"></div>
   </div>
-  <div>
-    <span>upper bound range:</span>
-    <div id="high-thresh-slider" style="width: 200px;"></div>
+  <div class="slider-box">
+    <div class="slider-label">Upper Bound Range</div>
+    <div id="high-thresh-slider" class="slider"></div>
   </div>
-  <div>
-    <span>confidence level:</span>
-    <div id="conf-slider" style="width: 200px;"></div>
+  <div class="slider-box">
+    <div class="slider-label">Confidence Level</div>
+    <div id="conf-slider" class="slider"></div>
   </div>
   <br />
   <div><svg id="dogs"></svg></div>
@@ -29,7 +33,4 @@
 
 <script src="dog_temperament.json"></script>
 <script src="dog_temperament.js"></script>
-
-<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
-<link href="node_modules/nouislider/distribute/nouislider.css" rel="stylesheet">
 

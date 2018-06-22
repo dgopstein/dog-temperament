@@ -7,10 +7,16 @@ dogs_json.forEach(d => d.pass_rate = d.pass/d.total)
 
 /////////////// UI ////////////////
 
+function updateSliderValue(slider, handle = 0) {
+  children = slider.getElementsByClassName('noUi-handle')
+  values = _.flatten([slider.noUiSlider.get()])
+  _.zip(children, values).forEach(([c, v]) => c.dataset.value = v.replace(/^0/,''))
+}
+
 const low_thresh_slider = document.getElementById('low-thresh-slider')
 noUiSlider.create(low_thresh_slider, {
 	range: {'min': 0, 'max': 1},
-	step: .01,
+  step: .01,
 	start: [ .5, 1],
   connect: true,
 })
@@ -147,7 +153,7 @@ function update(data) {
       .attr("class", "conf-rect")
     //.style("fill", "url(#mainGradient)")
     //.append("linearGradient", "rgba(60,80,10, .2)")
-      .style("fill", "rgba(135, 206, 235, 1)")
+      .style("fill", "#87ceeb")
       .attrs((d, i) => {
         const {low, high} = wilson(d.pass, d.total, conf_thresh)
         const height = -conf_height
@@ -186,7 +192,6 @@ function update(data) {
   function dog_name(curvesEnter) {
     curvesEnter
       .append("text")
-      .style("font-family", "'Open Sans', 'Helvetica', sans-serif")
       .attr("transform", (d, i) => "translate(0," + 20 + ")")
       .text((d, i) => d.name + " " + "("+d.pass+"/"+d.total+")")
   }
@@ -205,7 +210,7 @@ function update(data) {
   curves.exit().remove()
 }
 
-const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 10))
+const searchByPred = pred => update(_.take(_.filter(dogs_json, pred), 20))
 const searchByName = search_term => searchByPred(d => new RegExp(search_term || ".*", "i").test(d.name))
 const searchByLowHighRange = (low_thresh_low, low_thresh_high, high_thresh_low, high_thresh_high) =>
       searchByPred(d => {
@@ -233,10 +238,12 @@ const highThreshRange = () => high_thresh_slider.noUiSlider.get().map(parseFloat
 
 d3.select("#conf-slider").on("change"/*"input"*/, )
 d3.select("#search-box").on("keyup", e => cache_and_run_search(searchByName, [d3.event.target.value]))
-low_thresh_slider.noUiSlider.on('update',
-  ([low,high]) => cache_and_run_search(searchByLowHighRange, [low, high].concat(highThreshRange())))
-high_thresh_slider.noUiSlider.on('update',
-  ([low,high]) => cache_and_run_search(searchByLowHighRange, lowThreshRange().concat([low, high])))
-conf_slider.noUiSlider.on('update', setConf)
+low_thresh_slider.noUiSlider.on('update', ([low,high]) => {
+  updateSliderValue(low_thresh_slider)
+  cache_and_run_search(searchByLowHighRange, [low, high].concat(highThreshRange()))})
+high_thresh_slider.noUiSlider.on('update', ([low,high]) => {
+  updateSliderValue(high_thresh_slider)
+  cache_and_run_search(searchByLowHighRange, lowThreshRange().concat([low, high]))})
+conf_slider.noUiSlider.on('update', x => {updateSliderValue(conf_slider); setConf(x)})
 
 searchByName()

@@ -1,0 +1,76 @@
+body {
+  font-family: 'Open Sans', 'Helvetica', sans-serif
+}
+
+.slider-label {
+  height: 40px;
+  font-size: 18px;
+}
+
+.slider-label {
+  display: inline-block;
+  width: 180px;
+}
+
+.slider {
+  display: inline-block;
+  width: 200px;
+}
+
+.noUi-background {
+  height: 16px;
+}
+.noUi-background.noUi-vertical {
+  height: 200px;
+  width: 16px;
+  margin: 0 auto 30px;
+}
+.noUi-base .noUi-connect {
+  background-color: #c1e4f2;
+}
+.noUi-base .noUi-handle {
+  background-color: #87ceeb;
+  border-radius: 20px;
+  border: 1px solid #000;
+  box-shadow: none;
+  color: #FFFFFF;
+  display: table;
+  font-size: 15px;
+  height: 30px;
+  left: 0;
+  margin-left: -15px;
+  margin-top: -8px;
+  padding: 0;
+  position: absolute;
+  text-align: center;
+  top: 0;
+  width: 50px;
+  z-index: 2;
+}
+.noUi-horizontal .noUi-base .noUi-handle {
+  cursor: ew-resize;
+}
+.noUi-vertical .noUi-base .noUi-handle {
+  cursor: ns-resize;
+  margin-left:-8px;
+}
+.noUi-base .noUi-handle:hover {
+  background-color: #8edbf9;
+}
+.noUi-base .noUi-handle.noUi-active {
+  background-color: #75b6d1;
+  z-index: 3;
+}
+.noUi-base .noUi-handle::before {
+  background: transparent;
+  content: attr(data-value);
+  display: table-cell;
+  font-size: 18px;
+  font-weight: 100;
+  position: static;
+  width: 100%;
+  vertical-align: middle;
+}
+.noUi-base .noUi-handle::after {
+  display: none;
+}
