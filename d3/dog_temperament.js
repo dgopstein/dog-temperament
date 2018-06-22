@@ -19,7 +19,7 @@ const low_thresh_slider = document.getElementById('low-thresh-slider')
 noUiSlider.create(low_thresh_slider, {
 	range: {'min': 0, 'max': 1},
   step: .01,
-	start: [ .5, 1],
+	start: [ 0, 1],
   connect: true,
 })
 
@@ -27,7 +27,7 @@ const high_thresh_slider = document.getElementById('high-thresh-slider')
 noUiSlider.create(high_thresh_slider, {
 	range: {'min': 0, 'max': 1},
 	step: .01,
-	start: [ .8, 1],
+	start: [ 0, 1],
   connect: true,
 })
 
@@ -101,7 +101,7 @@ const wilson_points_from_domain = (pass, total, domain) => {
 
 /////////////// D3 Drawing //////////////////
 
-const x_trans = x => _.round(250 * x, 2)
+const x_trans = x => _.round(330 * x, 2)
 const y_trans = y => _.round(-2 * y, 2)
 
 var pdfLine = d3.line().x(d => x_trans(d.x)).y(d => y_trans(d.y));
@@ -109,13 +109,13 @@ var pdfLine = d3.line().x(d => x_trans(d.x)).y(d => y_trans(d.y));
 const revByName = (a, b) => -a.name.toLowerCase().localeCompare(b.name.toLowerCase())
 
 function updateDogs(data) {
-  const barkline_height = 70
+  const barkline_height = 80
   const n_dogs = data.length
   const dog_offset = i => (i+1) * barkline_height
 
   const svg = d3.select("#dogs")
         .attr('height', dog_offset(data.length))
-        .attr("width", 400)
+        .attr("width", 500)
 
   const curves = svg.selectAll('.bark-line')
         .data(data.reverse(), (d, i) => Math.random())
@@ -124,7 +124,7 @@ function updateDogs(data) {
         curves.enter()
             .append("g")
             .attr("class", "bark-line")
-            .attr("transform", (d, i) => "translate(50," + dog_offset(n_dogs - i - 1) + ")")
+            .attr("transform", (d, i) => "translate(15," + dog_offset(n_dogs - i - 1) + ")")
             .merge(curves)
 
   const bark_fill = "#e6e6e6"
