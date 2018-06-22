@@ -1,5 +1,8 @@
 const pap = x => {console.log(x); return x}
 
+const epsilon = 1e-20
+
+
 dogs_json.forEach(d => d.pass_rate = d.pass/d.total)
 
 /////////////// UI ////////////////
@@ -22,11 +25,10 @@ noUiSlider.create(high_thresh_slider, {
 
 const conf_slider = document.getElementById('conf-slider')
 noUiSlider.create(conf_slider, {
-	range: {'min': 0, 'max': 1},
+	range: {'min': 0, 'max': 0.995},
 	step: .01,
-	start: [ .8, 1],
+	start: [.8],
   connect: true,
-
 })
 
 /////////////// wilson points //////////////////
@@ -45,9 +47,18 @@ const wilson = (up, total, conf) => {
           high: (base + tail)/divisor}
 }
 
-const epsilon = 1e-20
-
 const max_wilson_point = (pass, total) => _.maxBy(wilson_points(pass, total, 10), 'y')
+
+const scaled_wilson_points = (pass, total, n_points, limit) => {
+  const points = wilson_points(pass, total, n_points)
+  const max_y = _.maxBy(points, 'y').y
+
+  if (max_y > limit) {
+    points.map(o => _.update(o, 'y', y => y * (limit/max_y))) // mutates points
+  }
+
+  return points
+}
 
 const wilson_points = (pass, total, n_points) => {
   const increment = 1/(n_points+2)
@@ -116,9 +127,6 @@ function update(data) {
             .attr("transform", (d, i) => "translate(50," + dog_offset(n_dogs - i - 1) + ")")
             .merge(curves)
 
-  // confidence interval lines
-  d3.selectAll(".conf-rect").remove()
-
   // probability curve
   function bark_line(curvesEnter) {
     curvesEnter
@@ -126,10 +134,11 @@ function update(data) {
       .style("fill", "rgba(225,225,225,1)")
       .style("stroke", "black") //(d, i) => color(d.name))
       .style("stroke-width", 2.5)
-      .attr("d", (d, i) => pdfLine(wilson_points(d.pass, d.total, 500)))
+      .attr("d", (d, i) => pdfLine(scaled_wilson_points(d.pass, d.total, 500, max_bar_height)))
   }
 
-  const bar_trans = y => _.max([y_trans(y), -.6*barkline_height])
+  const max_bar_height = .45*barkline_height
+  const bar_trans = y => _.max([y_trans(y), -max_bar_height])
   const conf_height = bar_trans(3);
 
   function conf_rect(curvesEnter) {
@@ -141,7 +150,6 @@ function update(data) {
       .style("fill", "rgba(135, 206, 235, 1)")
       .attrs((d, i) => {
         const {low, high} = wilson(d.pass, d.total, conf_thresh)
-        //const height = bar_trans(max_wilson_point(d.pass, d.total).y)
         const height = -conf_height
 
         return {x: x_trans(low), y: .3*-height,
@@ -158,7 +166,6 @@ function update(data) {
       .style("stroke-width", 3)
       .attrs((d, i) => {
         const thresh_x = wilson(d.pass, d.total, conf_thresh)[thresh_type]
-        //const height = bar_trans(max_wilson_point(d.pass, d.total).y)
         const height = conf_height
 
         return {x1: x_trans(thresh_x), y1: -height,
@@ -183,6 +190,9 @@ function update(data) {
       .attr("transform", (d, i) => "translate(0," + 20 + ")")
       .text((d, i) => d.name + " " + "("+d.pass+"/"+d.total+")")
   }
+
+  d3.selectAll(".conf-rect").remove()
+  d3.selectAll(".conf-line").remove()
 
   // z-depth
   bark_line(curvesEnter)
@@ -221,11 +231,12 @@ const cache_and_run_search = (f, args) => {
 const lowThreshRange = () => low_thresh_slider.noUiSlider.get().map(parseFloat)
 const highThreshRange = () => high_thresh_slider.noUiSlider.get().map(parseFloat)
 
-d3.select("#conf-slider").on("change"/*"input"*/, e => setConf(d3.event.target.value/100))
+d3.select("#conf-slider").on("change"/*"input"*/, )
 d3.select("#search-box").on("keyup", e => cache_and_run_search(searchByName, [d3.event.target.value]))
 low_thresh_slider.noUiSlider.on('update',
   ([low,high]) => cache_and_run_search(searchByLowHighRange, [low, high].concat(highThreshRange())))
 high_thresh_slider.noUiSlider.on('update',
   ([low,high]) => cache_and_run_search(searchByLowHighRange, lowThreshRange().concat([low, high])))
+conf_slider.noUiSlider.on('update', setConf)
 
 searchByName()
