@@ -126,6 +126,7 @@ function updateDogs(all_data, n) {
   const n_dogs = data.length
   const n_total_dogs = all_data.length
   const dog_offset = i => (i+1) * barkline_height
+  const dog_idx = i => n_dogs - i -1
 
   document.getElementById("n-shown-dogs").innerHTML = n_dogs
   document.getElementById("n-total-dogs").innerHTML = n_total_dogs
@@ -141,7 +142,7 @@ function updateDogs(all_data, n) {
         curves.enter()
             .append("g")
             .attr("class", "bark-line")
-            .attr("transform", (d, i) => "translate(15," + dog_offset(n_dogs - i - 1) + ")")
+            .attr("transform", (d, i) => "translate(15," + dog_offset(dog_idx(i)) + ")")
             .merge(curves)
 
   const bark_fill = "#e6e6e6"
@@ -166,7 +167,7 @@ function updateDogs(all_data, n) {
       .attr("class", "conf-rect")
       .style("fill", "#87ceeb")
       .attrs((d, i) => {
-        const {low, high} = wilson(d.pass, d.total, conf_thresh)
+        const {low, high} = dog_wilson(d)
 
         return {x: x_trans(low), y: conf_y,
                 height: conf_height,
@@ -181,7 +182,7 @@ function updateDogs(all_data, n) {
       .style("stroke", "black")
       .style("stroke-width", 3)
       .attrs((d, i) => {
-        const thresh_x = wilson(d.pass, d.total, conf_thresh)[thresh_type]
+        const thresh_x = dog_wilson(d)[thresh_type]
 
         return {x1: x_trans(thresh_x), y1: 2*conf_y,
                 x2: x_trans(thresh_x), y2: -2*conf_y}})
@@ -190,7 +191,7 @@ function updateDogs(all_data, n) {
   function mid_line(curvesEnter) {
     curvesEnter.append("line")
       .attr("class", "line")
-      .style("stroke", bark_fill)
+      .style("stroke", "white")
       .style("stroke-width", 4)
       .attrs((d, i) => {
         return {x1: x_trans(d.pass_rate), y1: conf_y,
@@ -211,7 +212,7 @@ function updateDogs(all_data, n) {
     curvesEnter
       .append("text")
       .attr("transform", (d, i) => "translate(0," + 20 + ")")
-      .text((d, i) => d.name + " " + "("+d.pass+"/"+d.total+")")
+      .text((d, i) => (dog_idx(i)+1) + ". " + d.name + " " + "("+d.pass+"/"+d.total+")")
   }
 
   //d3.selectAll(".bark-line").remove()
@@ -232,7 +233,17 @@ function updateDogs(all_data, n) {
 
 var max_results = 20
 
-const searchByPred = pred => updateDogs(_.filter(dogs_json, pred), max_results)
+const dog_wilson = d => wilson(d.pass, d.total, conf_thresh)
+
+var selected_sorter = "name"
+const sorters = {
+  "name": d => d.name,
+  "low": d => -dog_wilson(d).low,
+  "mid": d => -d.pass_rate,
+  "high": d => -dog_wilson(d).high
+}
+
+const searchByPred = pred => updateDogs(_.sortBy(_.filter(dogs_json, pred), sorters[selected_sorter]), max_results)
 const searchDogs = params => {
   const {low1, low2, high1, high2, name} = params
   const name_regex = new RegExp(name || ".*", "i")
@@ -240,7 +251,7 @@ const searchDogs = params => {
   return searchByPred(d => {
     const contains_name = name_regex.test(d.name)
 
-    const {low, high} = wilson(d.pass, d.total, conf_thresh)
+    const {low, high} = dog_wilson(d)
     const contains_conf = low1 <= low && low <= low2 && high1 <= high && high <= high2
 
     return contains_name && contains_conf
@@ -258,10 +269,12 @@ const dogParams = () => {return {
   low1: lowThreshRange()[0],
   low2: lowThreshRange()[1],
   high1: highThreshRange()[0],
-  high2: highThreshRange()[1]
+  high2: highThreshRange()[1],
 }}
 
 const dogParamSearch = () => searchDogs(dogParams())
+
+const sorterButtons = d3.selectAll('input[name=sorter]')
 
 d3.select("#conf-slider").on("change"/*"input"*/, () => dogParamSearch())
 d3.select("#search-box").on("keyup", e => dogParamSearch())
@@ -269,6 +282,6 @@ low_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(low_thresh_slid
 high_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(high_thresh_slider); dogParamSearch()})
 conf_slider.noUiSlider.on('update', x => {updateSliderValue(conf_slider); setConf(x); dogParamSearch()})
 max_results_slider.noUiSlider.on('update', x => {updateSliderValue(max_results_slider, "int"); max_results=x; dogParamSearch()})
-
+sorterButtons.on('change', (x, i) => {selected_sorter = sorterButtons.nodes()[i].id.replace(/^sort_/, ''); dogParamSearch()})
 
 dogParamSearch()

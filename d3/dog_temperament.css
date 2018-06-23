@@ -2,6 +2,11 @@ body {
   font-family: 'Open Sans', 'Helvetica', sans-serif
 }
 
+#sorter-radios {
+  display: inline-block;
+  margin-left: -40px;
+}
+
 #search-box {
   height: 22px;
   width: 160px;
