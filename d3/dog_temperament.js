@@ -188,6 +188,20 @@ function updateDogs(all_data, n) {
                 x2: x_trans(thresh_x), y2: -2*conf_y}})
   }
 
+  function filter_bars(curvesEnter, moving, low, high) {
+    if (moving) {
+      curvesEnter
+        .append("rect")
+        .attr("class", "conf-rect")
+        .style("fill", "rgba(100, 100, 100, .2)")
+        .attrs((d, i) => {
+          return {x: x_trans(low), y: -barkline_height,
+                  height: barkline_height,
+                  width: x_trans(high)-x_trans(low)}
+        })
+    }
+  }
+
   function mid_line(curvesEnter) {
     curvesEnter.append("line")
       .attr("class", "line")
@@ -225,6 +239,8 @@ function updateDogs(all_data, n) {
   mid_line(curvesEnter)
   conf_line(curvesEnter, "low")
   conf_line(curvesEnter, "high")
+  filter_bars(curvesEnter, movingLowThresh, dogParams()["low1"], dogParams()["low2"])
+  filter_bars(curvesEnter, movingHighThresh, dogParams()["high1"], dogParams()["high2"])
   //bottom_line(curvesEnter)
   dog_name(curvesEnter)
 
@@ -258,6 +274,8 @@ const searchDogs = params => {
 })}
 
 var conf_thresh = 0.8
+var movingLowThresh = false
+var movingHighThresh = false
 const setConf = conf => conf_thresh = conf
 
 const lowThreshRange = () => low_thresh_slider.noUiSlider.get().map(parseFloat)
@@ -278,9 +296,17 @@ const sorterButtons = d3.selectAll('input[name=sorter]')
 
 d3.select("#conf-slider").on("change"/*"input"*/, () => dogParamSearch())
 d3.select("#search-box").on("keyup", e => dogParamSearch())
+low_thresh_slider.noUiSlider.on('start', ()=>{movingLowThresh=true})
+low_thresh_slider.noUiSlider.on('end', ()=>{movingLowThresh=false; dogParamSearch()})
 low_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(low_thresh_slider); dogParamSearch()})
+
+high_thresh_slider.noUiSlider.on('start', ()=>{movingHighThresh=true})
+high_thresh_slider.noUiSlider.on('end', ()=>{movingHighThresh=false; dogParamSearch()})
 high_thresh_slider.noUiSlider.on('update', ()=>{updateSliderValue(high_thresh_slider); dogParamSearch()})
+
+
 conf_slider.noUiSlider.on('update', x => {updateSliderValue(conf_slider); setConf(x); dogParamSearch()})
+
 max_results_slider.noUiSlider.on('update', x => {updateSliderValue(max_results_slider, "int"); max_results=x; dogParamSearch()})
 sorterButtons.on('change', (x, i) => {selected_sorter = sorterButtons.nodes()[i].id.replace(/^sort_/, ''); dogParamSearch()})
 
